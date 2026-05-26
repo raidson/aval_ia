@@ -26,8 +26,6 @@ class Aluno:
 
     def adicionar_nota(self, disciplina: str, nota: float, periodo: int) -> None:
         """Registra uma nota para o aluno em uma disciplina."""
-        if not (0.0 <= nota <= 10.0):
-            raise ValueError(f"Nota inválida: {nota}. Deve estar entre 0 e 10.")
         self._notas.append({
             "disciplina": disciplina,
             "nota": nota,
@@ -48,8 +46,6 @@ class Aluno:
 
     def adicionar_frequencia(self, disciplina: str, percentual: float, periodo: int) -> None:
         """Registra o percentual de frequência em uma disciplina."""
-        if not (0.0 <= percentual <= 100.0):
-            raise ValueError(f"Frequência inválida: {percentual}. Deve estar entre 0 e 100.")
         self._frequencias.append({
             "disciplina": disciplina,
             "percentual": percentual,
