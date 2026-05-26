@@ -129,7 +129,7 @@ def login():
 
     token = secrets.token_hex(32)
     _tokens_ativos[token] = dados_usuario["id"]
-    return jsonify({"token": token, "perfil": dados_usuario["perfil"]}), 200
+    return jsonify({"token": token, "perfil": dados_usuario["perfil"], "nome": dados_usuario["nome"]}), 200
 
 
 @app.route("/auth/logout", methods=["POST"])
@@ -651,92 +651,6 @@ def admin_deletar_usuario(usuario_id):
     return jsonify({"mensagem": "Usuário removido."}), 200
 
 
-import csv
-import io
-
-def format_periodo(p_str):
-    if not p_str:
-        return 0
-    nums = "".join(filter(str.isdigit, str(p_str)))
-    return int(nums) if nums else 0
-
-@app.route("/upload/csv", methods=["POST"])
-@requer_autenticacao
-def upload_csv():
-    if "file" not in request.files:
-        return jsonify({"erro": "Nenhum arquivo enviado."}), 400
-
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"erro": "Nome de arquivo inválido."}), 400
-
-    if not file.filename.endswith(".csv"):
-        return jsonify({"erro": "Apenas arquivos CSV são suportados."}), 400
-
-    try:
-        stream = io.StringIO(file.stream.read().decode("utf-8"), newline=None)
-        reader = csv.DictReader(stream)
-
-        # Guardar alunos processados no csv para não buscar o tempo todo
-        alunos_cacheados = {}
-
-        for raw_row in reader:
-            row = {k.strip() if k else k: v for k, v in raw_row.items() if k}
-
-            matricula = row.get("PESSOA", "").strip()
-            curso = row.get("NOME", "").strip()
-
-            if not matricula:
-                continue
-
-            periodo_str = row.get("PERIODO", "").strip()
-            periodo_ing_str = row.get("PERIODO_INGRESSO", "").strip()
-
-            periodo_linha = format_periodo(periodo_str)
-            periodo_aluno = format_periodo(periodo_ing_str) if periodo_ing_str else periodo_linha
-
-            disciplina = row.get("NOME_DISCIPLINA", "").strip()
-
-            nota_str = row.get("MEDIA NOTA", "0").strip().replace(",", ".")
-            try:
-                nota = float(nota_str)
-                if nota > 10.0:
-                    nota = nota / 10.0
-            except ValueError:
-                nota = 0.0
-
-            freq_str = row.get("PERC_PRESENCA", "0").strip().replace(",", ".")
-            try:
-                freq = float(freq_str)
-                if freq <= 1.0:
-                    freq = freq * 100
-                elif freq == 10.0:
-                    freq = 1000.0
-            except ValueError:
-                freq = 0.0
-
-            # Buscar ou criar aluno
-            if matricula not in alunos_cacheados:
-                try:
-                    aluno = aluno_service.buscar_por_matricula(matricula)
-                except ValueError:
-                    # Criar aluno
-                    nome_gerado = f"Aluno {matricula}"
-                    aluno = aluno_service.cadastrar(nome=nome_gerado, matricula=matricula, curso=curso, periodo=periodo_aluno)
-                alunos_cacheados[matricula] = aluno
-            else:
-                aluno = alunos_cacheados[matricula]
-
-            # Registrar nota e frequencia
-            if disciplina:
-                aluno_service.registrar_nota(aluno.id, disciplina, nota, periodo_linha)
-                aluno_service.registrar_frequencia(aluno.id, disciplina, freq, periodo_linha)
-
-        return jsonify({"mensagem": "CSV processado com sucesso"}), 200
-
-    except Exception as e:
-        return jsonify({"erro": f"Erro ao processar CSV: {str(e)}"}), 500
-
 # ------------------------------------------------------------------ #
 # Alertas Inteligentes
 # ------------------------------------------------------------------ #
@@ -755,6 +669,10 @@ def gerar_alertas():
         media = indicador_service.calcular_media_geral(aluno, periodo)
         cv    = indicador_service.calcular_coeficiente_variacao(aluno, periodo)
         zscore = indicador_service.calcular_zscore_aluno(todos, aluno.id, periodo)
+
+        # Sem dados no período — ignora
+        if freq == 0.0 and media == 0.0:
+            continue
 
         # Frequência crítica (abaixo do mínimo legal)
         if freq < 75:
@@ -817,28 +735,6 @@ def gerar_alertas():
                 "mensagem": f"Desempenho {abs(zscore):.1f} desvios abaixo da média da turma (z={zscore:.2f})",
                 "acao": "Avaliar necessidade de acompanhamento pedagógico especializado",
             })
-        # Dados Invalidos via Upload
-        for f_reg in aluno.get_frequencias():
-            if f_reg["percentual"] > 100.0 or f_reg["percentual"] < 0:
-                alertas.append({
-                    "nivel": "medio",
-                    "aluno_id": aluno.id,
-                    "aluno_nome": aluno.nome,
-                    "tipo": "dado_invalido",
-                    "mensagem": f"Frequência inválida na disciplina {f_reg['disciplina']} ({f_reg['percentual']}%). Verifique os dados de importação.",
-                    "acao": "Corrigir dados do aluno",
-                })
-        for n_reg in aluno.get_notas():
-            if n_reg["nota"] > 10.0 or n_reg["nota"] < 0:
-                alertas.append({
-                    "nivel": "medio",
-                    "aluno_id": aluno.id,
-                    "aluno_nome": aluno.nome,
-                    "tipo": "dado_invalido",
-                    "mensagem": f"Nota inválida na disciplina {n_reg['disciplina']} ({n_reg['nota']}). Verifique os dados de importação.",
-                    "acao": "Corrigir dados do aluno",
-                })
-
 
     ordem = {"critico": 0, "alto": 1, "medio": 2}
     alertas.sort(key=lambda a: ordem.get(a["nivel"], 3))

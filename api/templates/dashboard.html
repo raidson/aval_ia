@@ -31,8 +31,13 @@
         .glow-2{bottom:-200px;left:-200px;background:radial-gradient(circle,rgba(244,63,94,.25) 0%,transparent 70%)}
 
         /* ── Sidebar ── */
-        aside{width:var(--sidebar-w);background:rgba(15,23,42,.85);backdrop-filter:blur(20px);border-right:1px solid var(--glass-border);height:100vh;position:sticky;top:0;display:flex;flex-direction:column;padding:2rem;z-index:100;flex-shrink:0}
-        .logo-area{display:flex;align-items:center;gap:.9rem;margin-bottom:2.5rem}
+        aside{width:var(--sidebar-w);background:rgba(15,23,42,.95);backdrop-filter:blur(20px);border-right:1px solid var(--glass-border);height:100vh;position:fixed;top:0;left:0;display:flex;flex-direction:column;padding:2rem;z-index:300;flex-shrink:0;transform:translateX(calc(-1 * var(--sidebar-w)));transition:transform .3s cubic-bezier(.4,0,.2,1)}
+        aside.open{transform:translateX(0)}
+        .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);z-index:299}
+        .sidebar-backdrop.open{display:block}
+        .logo-toggle{position:fixed;top:1.25rem;left:1.25rem;z-index:200;width:38px;height:38px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 18px var(--primary-glow);border:none;color:#fff;transition:transform .2s,box-shadow .2s}
+        .logo-toggle:hover{transform:scale(1.08);box-shadow:0 0 26px var(--primary-glow)}
+        .logo-area{display:flex;align-items:center;gap:.9rem;margin-bottom:2.5rem;cursor:pointer}
         .logo-box{width:38px;height:38px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px var(--primary-glow);flex-shrink:0}
         .logo-text{font-size:1.4rem;font-weight:800;letter-spacing:-1px;background:linear-gradient(to right,#fff,#94a3b8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
         .nav-links{list-style:none;flex:1}
@@ -46,7 +51,7 @@
         .avatar{width:38px;height:38px;border-radius:50%;background:var(--glass-bg);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
         /* ── Main ── */
-        main{flex:1;padding:2rem 2.5rem;overflow-y:auto;min-width:0}
+        main{flex:1;padding:2rem 2.5rem;padding-left:5rem;overflow-y:auto;min-width:0}
         .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem}
         .top-bar h1{font-size:1.75rem;font-weight:700}
         .top-bar p{color:var(--text-dim);font-size:.875rem;margin-top:.2rem}
@@ -148,7 +153,7 @@
 
         /* ── Responsivo ── */
         @media(max-width:1200px){.grid-2{grid-template-columns:1fr}.grid-2-eq{grid-template-columns:1fr}}
-        @media(max-width:800px){aside{display:none}main{padding:1.25rem}}
+        @media(max-width:800px){main{padding:1.25rem;padding-left:4.5rem}}
     </style>
 </head>
 <body>
@@ -156,8 +161,12 @@
 <div class="bg-glow glow-2"></div>
 
 <!-- ════════════════ SIDEBAR ════════════════ -->
-<aside>
-    <div class="logo-area">
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+<button class="logo-toggle" id="logoToggle" onclick="toggleSidebar()" aria-label="Abrir menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+</button>
+<aside id="sidebar">
+    <div class="logo-area" onclick="closeSidebar()">
         <div class="logo-box">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         </div>
@@ -247,13 +256,6 @@
                 <div class="kpi-icon icon-emerald"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
                 <div class="kpi-value" id="kMedia">--</div>
                 <div class="kpi-label">Média Institucional</div>
-                <div class="kpi-sub" id="kMediana">mediana: --</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon icon-violet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-                <div class="kpi-value" id="kDesvio">--</div>
-                <div class="kpi-label">Desvio Padrão</div>
-                <div class="kpi-sub" id="kCV">CV: --</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-icon icon-sky"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
@@ -313,21 +315,6 @@
             <div style="height:280px"><canvas id="chartDisciplinas"></canvas></div>
         </div>
 
-        <div class="block">
-            <div class="block-header">
-                <div><div class="block-title">Monitoramento Individual</div><div class="block-sub">Z-score e percentil em relação à turma</div></div>
-                <input type="text" id="dashSearch" class="btn" placeholder="Buscar aluno..." style="width:220px;text-align:left">
-            </div>
-            <div class="table-wrap">
-                <table id="tabelaAlunos">
-                    <thead><tr>
-                        <th>Aluno</th><th>Matrícula</th><th>Média</th><th>IAA</th><th>Frequência</th>
-                        <th>Z-score</th><th>Percentil</th><th>IRP</th><th>Risco</th><th></th>
-                    </tr></thead>
-                    <tbody id="tabelaBody"></tbody>
-                </table>
-            </div>
-        </div>
     </div>
 
     <!-- ══ VIEW: ALUNOS ══ -->
@@ -564,6 +551,128 @@
 
 <script>
 /* ══════════════════════════════════
+   MOCK DE DADOS (modo teste)
+══════════════════════════════════ */
+const MOCK_MODE = true;
+
+const MOCK_ALUNOS = [
+    { id:'a1', nome:'Ana Clara Souza',    matricula:'2024001', curso:'Inteligência Artificial', periodo:2, email:'ana@uni.edu' },
+    { id:'a2', nome:'Bruno Mendes',        matricula:'2024002', curso:'Inteligência Artificial', periodo:2, email:'bruno@uni.edu' },
+    { id:'a3', nome:'Carla Figueiredo',    matricula:'2024003', curso:'Inteligência Artificial', periodo:2, email:'carla@uni.edu' },
+    { id:'a4', nome:'Diego Alves',         matricula:'2024004', curso:'Inteligência Artificial', periodo:2, email:'diego@uni.edu' },
+    { id:'a5', nome:'Eduarda Pires',       matricula:'2024005', curso:'Inteligência Artificial', periodo:2, email:'edu@uni.edu' },
+    { id:'a6', nome:'Felipe Costa',        matricula:'2024006', curso:'Inteligência Artificial', periodo:2, email:'felipe@uni.edu' },
+    { id:'a7', nome:'Gabriela Nunes',      matricula:'2024007', curso:'Inteligência Artificial', periodo:2, email:'gabi@uni.edu' },
+    { id:'a8', nome:'Henrique Barbosa',    matricula:'2024008', curso:'Inteligência Artificial', periodo:2, email:'henrique@uni.edu' },
+];
+const MOCK_DISCIPLINAS = ['Álgebra Linear', 'Cálculo I', 'Programação', 'Estatística', 'Banco de Dados'];
+
+function rnd(min, max, dec = 2) { return parseFloat((Math.random() * (max - min) + min).toFixed(dec)); }
+
+function _alunoRelatorio(a) {
+    const media = rnd(3.5, 9.8);
+    const freq  = rnd(62, 99, 1);
+    const iaa   = parseFloat((media * 0.7 + (freq / 10) * 0.3).toFixed(2));
+    const irp   = parseFloat(Math.min(100, Math.max(0, (10 - media) * 5 + Math.max(0, 75 - freq) * 1.5)).toFixed(1));
+    const risco = media < 4.5 || freq < 70 ? (media < 3 ? 'critico' : 'alto') : media < 6.5 ? 'medio' : 'baixo';
+    return { aluno_id:a.id, nome:a.nome, matricula:a.matricula, media_geral:media, frequencia_media:freq, iaa, irp, risco, zscore:rnd(-2.5,2.5), percentil:rnd(5,98,1) };
+}
+
+function mockFetch(url) {
+    if (url.includes('/relatorios/turma') && !url.includes('exportar')) {
+        const alunos = MOCK_ALUNOS.map(_alunoRelatorio);
+        return { periodo:2, total:alunos.length, alunos };
+    }
+    if (url.includes('/relatorios/estatisticas')) {
+        return {
+            periodo:2,
+            estatisticas_turma:{
+                media_institucional:rnd(5.5,8.2), mediana_institucional:rnd(5,8),
+                desvio_padrao_turma:rnd(0.8,2.2), coeficiente_variacao:rnd(10,32,1),
+                frequencia_media_turma:rnd(74,94,1), total_alunos:MOCK_ALUNOS.length, taxa_aprovacao:rnd(55,92,1),
+            },
+            correlacao_freq_nota:rnd(0.45,0.88),
+            interpretacao_correlacao:'Correlação positiva forte entre frequência e nota (r≈0.72)',
+            distribuicao_medias:{'0–2':1,'2–4':1,'4–6':2,'6–8':3,'8–10':1},
+            pontos_dispersao:MOCK_ALUNOS.map(a=>({ nome:a.nome, frequencia:rnd(62,99,1), media:rnd(3.5,9.8) })),
+        };
+    }
+    if (url.includes('/relatorios/disciplinas')) {
+        return {
+            periodo:2,
+            disciplinas: MOCK_DISCIPLINAS.map(d => ({
+                disciplina:d, media:rnd(4.5,8.8), mediana:rnd(4,8.5),
+                desvio_padrao:rnd(0.5,1.8), nota_min:rnd(2,4.5), nota_max:rnd(7.5,10),
+                total_alunos:MOCK_ALUNOS.length, taxa_aprovacao:rnd(55,95,1),
+            })),
+        };
+    }
+    if (url.startsWith('/alunos') && !url.includes('/notas') && !url.includes('/frequencias')) {
+        return MOCK_ALUNOS;
+    }
+    if (url.includes('/alertas')) {
+        const alertas = [
+            { nivel:'critico', aluno_id:'a4', aluno_nome:'Diego Alves',   tipo:'frequencia',     mensagem:'Frequência crítica: 68.3% — abaixo do mínimo de 75%', acao:'Contato urgente e plano de reposição' },
+            { nivel:'alto',    aluno_id:'a6', aluno_nome:'Felipe Costa',   tipo:'desempenho',     mensagem:'Média em zona de risco: 5.8', acao:'Incentivar participação e verificar dificuldades' },
+            { nivel:'medio',   aluno_id:'a2', aluno_nome:'Bruno Mendes',   tipo:'inconsistencia', mensagem:'Desempenho irregular entre disciplinas (CV: 38.1%)', acao:'Identificar disciplinas críticas e direcionar suporte' },
+        ];
+        return { periodo:2, total:alertas.length, alertas };
+    }
+    if (url.includes('/perfil')) {
+        const id = url.split('/indicadores/')[1]?.split('/')[0];
+        const aluno = MOCK_ALUNOS.find(a => a.id === id) || MOCK_ALUNOS[0];
+        const notas = Object.fromEntries(MOCK_DISCIPLINAS.map(d => [d, rnd(3.5, 9.8)]));
+        const vals  = Object.values(notas);
+        const media = parseFloat((vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2));
+        const freq  = rnd(65, 98, 1);
+        const nivel = media < 4.5 ? 'critico' : media < 6 ? 'alto' : media < 7.5 ? 'medio' : 'baixo';
+        return {
+            aluno:{ id:aluno.id, nome:aluno.nome, matricula:aluno.matricula },
+            periodo:2,
+            indicadores:{
+                media_geral:media, mediana:rnd(4,9), iaa:parseFloat((media*0.7+(freq/10)*0.3).toFixed(2)),
+                nota_efetiva:parseFloat((media*(freq/100)).toFixed(2)),
+                desvio_padrao:rnd(0.5,2.2), coeficiente_variacao:rnd(8,38,1), amplitude:rnd(1,6),
+                q1:rnd(4,6), q3:rnd(7,9), iqr:rnd(1,3),
+                assimetria:rnd(-1,1,3), curtose:rnd(-1,2,3),
+                frequencia_media:freq, irp:rnd(5,75,1),
+                zscore_turma:rnd(-2,2,3), percentil_turma:rnd(10,95,1),
+                nota_minima:rnd(2,5), nota_maxima:rnd(7.5,10),
+            },
+            notas_por_disciplina:notas,
+            tendencia:{ periodos:[1,2], medias:[rnd(4,8), media], tendencia:Math.random()>0.5?'crescente':'decrescente', inclinacao:rnd(-1,1,3), variacao:rnd(-2,2) },
+            risco:{ nivel, justificativa:'Análise baseada em dados simulados para fins de teste.', evidencias:[] },
+        };
+    }
+    if (url.includes('/admin/usuarios')) {
+        return [
+            { id:'u1', nome:'Administrador', matricula:'admin',  perfil:'admin',       ativo:true },
+            { id:'u2', nome:'Prof. Marcos',  matricula:'prof01', perfil:'professor',   ativo:true },
+            { id:'u3', nome:'Coord. Lúcia',  matricula:'coord1', perfil:'coordenador', ativo:true },
+        ];
+    }
+    return null;
+}
+
+if (MOCK_MODE) {
+    localStorage.setItem('nexus_token',  'mock-token-teste');
+    localStorage.setItem('nexus_perfil', 'admin');
+    localStorage.setItem('nexus_nome',   'Administrador');
+}
+
+/* ══════════════════════════════════
+   SIDEBAR TOGGLE
+══════════════════════════════════ */
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarBackdrop').classList.toggle('open');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarBackdrop').classList.remove('open');
+}
+
+/* ══════════════════════════════════
    UTILITÁRIOS
 ══════════════════════════════════ */
 let charts = {};
@@ -572,12 +681,16 @@ function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete chart
 function token() { return localStorage.getItem('nexus_token') || ''; }
 
 async function apiFetch(url, opts = {}) {
+    if (MOCK_MODE) {
+        await new Promise(r => setTimeout(r, 80));
+        return mockFetch(url);
+    }
     const res = await fetch(url, {
         ...opts,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}`, ...(opts.headers || {}) }
     });
     if (res.status === 401) { window.location.href = '/login'; return null; }
-    return res.json();
+    try { return await res.json(); } catch { return null; }
 }
 
 function riskClass(n) { return {baixo:'badge-baixo',medio:'badge-medio',alto:'badge-alto',critico:'badge-critico'}[n] || 'badge-medio'; }
@@ -603,6 +716,7 @@ const VIEW_META = {
 };
 
 function showView(viewId) {
+    closeSidebar();
     // Esconde todas as views
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + viewId).style.display = '';
@@ -648,6 +762,7 @@ async function carregarDashboard() {
             apiFetch(`/relatorios/estatisticas?periodo=${periodo}`),
             apiFetch(`/relatorios/disciplinas?periodo=${periodo}`),
         ]);
+        if (!turma || !stats || !disciplinas) return;
         renderKPIs(turma, stats.estatisticas_turma);
         renderCorrelacao(stats);
         renderPerformance(turma.alunos);
@@ -655,18 +770,14 @@ async function carregarDashboard() {
         renderScatter(stats.pontos_dispersao);
         renderHistograma(stats.distribuicao_medias);
         renderDisciplinas(disciplinas.disciplinas);
-        renderTabela(turma.alunos);
     } catch (err) { console.error(err); }
 }
 
 function renderKPIs(turma, stats) {
-    if (!stats) return;
+    if (!turma || !stats) return;
     const alunos = turma.alunos;
     document.getElementById('kTotal').textContent = turma.total;
     document.getElementById('kMedia').textContent = stats.media_institucional?.toFixed(2) ?? '--';
-    document.getElementById('kMediana').textContent = `mediana: ${stats.mediana_institucional?.toFixed(2) ?? '--'}`;
-    document.getElementById('kDesvio').textContent = stats.desvio_padrao_turma?.toFixed(2) ?? '--';
-    document.getElementById('kCV').textContent = `CV: ${stats.coeficiente_variacao?.toFixed(1) ?? '--'}%`;
     document.getElementById('kFreq').textContent = `${stats.frequencia_media_turma?.toFixed(1) ?? '--'}%`;
     const alto = alunos.filter(a => a.risco === 'alto' || a.risco === 'critico').length;
     const critico = alunos.filter(a => a.risco === 'critico').length;
@@ -784,32 +895,6 @@ function irpColor(irp) {
     return '#34d399';
 }
 
-function renderTabela(alunos) {
-    document.getElementById('tabelaBody').innerHTML = alunos.map(a => {
-        const z = a.zscore ?? 0;
-        const zPct = Math.min(100, Math.max(0, ((z + 3) / 6) * 100));
-        const zColor = z >= 0 ? '#34d399' : '#fb7185';
-        const irp = a.irp ?? 0;
-        const ic = irpColor(irp);
-        return `<tr>
-            <td><strong>${a.nome}</strong></td>
-            <td style="color:var(--text-dim)">${a.matricula}</td>
-            <td>${a.media_geral?.toFixed(2)}</td>
-            <td style="color:var(--text-dim)">${a.iaa?.toFixed(2) ?? '--'}</td>
-            <td>${a.frequencia_media?.toFixed(1)}%</td>
-            <td><div class="zscore-bar"><span style="font-size:.75rem;min-width:38px;color:${zColor}">${z>=0?'+':''}${z?.toFixed(2)}</span><div class="zscore-track"><div class="zscore-fill" style="width:${zPct}%;background:${zColor}"></div></div></div></td>
-            <td style="color:var(--text-dim)">${a.percentil?.toFixed(0) ?? '--'}º</td>
-            <td><div class="zscore-bar"><span style="font-size:.75rem;min-width:32px;color:${ic}">${irp}</span><div class="zscore-track"><div class="zscore-fill" style="width:${irp}%;background:${ic}"></div></div></div></td>
-            <td><span class="badge ${riskClass(a.risco)}">${riskLabel(a.risco)}</span></td>
-            <td><button class="btn btn-sm" onclick="irParaIndicadores('${a.aluno_id}')">Ver perfil</button></td>
-        </tr>`;
-    }).join('');
-}
-
-document.getElementById('dashSearch').addEventListener('input', function() {
-    const term = this.value.toLowerCase();
-    document.querySelectorAll('#tabelaAlunos tbody tr').forEach(r => { r.style.display = r.textContent.toLowerCase().includes(term)?'':'none'; });
-});
 
 /* ══════════════════════════════════
    VIEW: ALUNOS
@@ -1055,9 +1140,8 @@ async function carregarPerfil() {
 }
 
 function irParaIndicadores(alunoId) {
-    showView('indicadores');
     document.getElementById('seletorAluno').value = alunoId;
-    carregarSeletorAlunos();
+    showView('indicadores');
 }
 
 /* ══════════════════════════════════
@@ -1222,7 +1306,9 @@ async function removerUsuario(id, nome) {
 document.addEventListener('DOMContentLoaded', () => {
     if (!token()) { window.location.href = '/login'; return; }
     const perfil = localStorage.getItem('nexus_perfil');
+    const nome = localStorage.getItem('nexus_nome');
     if (perfil) document.getElementById('userRole').textContent = perfil;
+    if (nome) document.getElementById('userName').textContent = nome;
 
     if (perfil === 'admin') {
         document.getElementById('navAdminSection').style.display = '';

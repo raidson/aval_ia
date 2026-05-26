@@ -83,35 +83,6 @@
             animation: slideDown 0.7s ease-out;
         }
 
-        .brand-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            background: rgba(255,255,255,0.5);
-            border: 1px solid rgba(255,255,255,0.7);
-            border-radius: 2rem;
-            padding: 0.3rem 0.9rem;
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: #1E40AF;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            margin-bottom: 0.75rem;
-            backdrop-filter: blur(8px);
-        }
-
-        .brand-tag span.dot-live {
-            width: 6px; height: 6px;
-            background: #22c55e;
-            border-radius: 50%;
-            animation: pulse-dot 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.5; transform: scale(0.8); }
-        }
-
         .brand-name {
             font-size: 4rem;
             font-weight: 900;
@@ -134,43 +105,6 @@
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-20px); }
             to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ── Cards de estatísticas ── */
-        .stats-row {
-            display: flex;
-            gap: 0.75rem;
-            width: 100%;
-            animation: slideDown 0.7s ease-out 0.1s both;
-        }
-
-        .stat-card {
-            flex: 1;
-            background: rgba(255,255,255,0.6);
-            border: 1px solid rgba(255,255,255,0.8);
-            border-radius: 0.75rem;
-            padding: 0.75rem;
-            text-align: center;
-            backdrop-filter: blur(10px);
-            transition: background 0.2s;
-        }
-
-        .stat-card:hover { background: rgba(255,255,255,0.8); }
-
-        .stat-number {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: #1E40AF;
-            line-height: 1;
-            margin-bottom: 0.2rem;
-        }
-
-        .stat-label {
-            font-size: 0.65rem;
-            color: #3B82F6;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
 
         /* ── Card de login ── */
@@ -390,28 +324,8 @@
 
         <!-- Brand -->
         <div class="brand-header">
-            <div class="brand-tag">
-                <span class="dot-live"></span>
-                Sistema Ativo
-            </div>
             <div class="brand-name">NEXUS</div>
             <div class="brand-subtitle">Monitoramento &amp; Predição Acadêmica</div>
-        </div>
-
-        <!-- Stats -->
-        <div class="stats-row">
-            <div class="stat-card">
-                <div class="stat-number">12+</div>
-                <div class="stat-label">Indicadores</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">IA</div>
-                <div class="stat-label">Predição de Risco</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">100%</div>
-                <div class="stat-label">Online</div>
-            </div>
         </div>
 
         <!-- Card de Login -->
@@ -467,14 +381,6 @@
             <span class="feature-pill">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 Análise de Desempenho
-            </span>
-            <span class="feature-pill">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                Alertas de Risco
-            </span>
-            <span class="feature-pill">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                Relatórios Excel
             </span>
             <span class="feature-pill">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -535,6 +441,7 @@
                 if (response.ok) {
                     localStorage.setItem('nexus_token', data.token);
                     localStorage.setItem('nexus_perfil', data.perfil);
+                    localStorage.setItem('nexus_nome', data.nome || '');
 
                     messageBox.textContent = 'Login realizado com sucesso! Redirecionando...';
                     messageBox.classList.add('success');
