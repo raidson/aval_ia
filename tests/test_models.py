@@ -99,7 +99,7 @@ class TestTurma:
 
 class TestUsuario:
     def _usuario(self):
-        return Usuario(id="u1", nome="Admin", email="admin@test.com",
+        return Usuario(id="u1", nome="Admin", matricula="admin",
                        perfil=PerfilUsuario.ADMIN)
 
     def test_senha_hash(self):
@@ -120,7 +120,7 @@ class TestUsuario:
         assert u.tem_permissao("exclusao") is True
 
     def test_permissoes_visualizador(self):
-        u = Usuario(id="u2", nome="V", email="v@test.com",
+        u = Usuario(id="u2", nome="V", matricula="v",
                     perfil=PerfilUsuario.VISUALIZADOR)
         assert u.tem_permissao("leitura") is True
         assert u.tem_permissao("escrita") is False

@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-5000}:${PORT:-5000}"
+    environment:
+      - PORT=${PORT:-5000}
+    volumes:
+      - ./data:/app/data
