@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: simpa-api
+    env: docker
+    plan: free
+    branch: main
+    envVars:
+      - key: PORT
+        value: 5000
