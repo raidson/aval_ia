@@ -1,0 +1,10 @@
+{
+  "EXEMPLO_ID_1": {
+    "id": "EXEMPLO_ID_1",
+    "nome": "Administrador",
+    "matricula": "admin",
+    "perfil": "admin",
+    "senha_hash": "GERE_COM_seed.py",
+    "ativo": true
+  }
+}

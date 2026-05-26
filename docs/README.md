@@ -79,7 +79,7 @@ O token é obtido no endpoint `/auth/login`.
 # Login
 curl -X POST http://localhost:5000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"matricula":"admin","senha":"SUA_SENHA"}'
+  -d '{"email":"admin@simpa.edu","senha":"admin123"}'
 
 # Listar alunos (com o token obtido)
 curl http://localhost:5000/alunos \
@@ -107,4 +107,4 @@ curl -X POST http://localhost:5000/indicadores/<ALUNO_ID>/gerar \
 ## Níveis de Execução
 
 - **Nível 1 (obrigatório):** arquitetura POO, API funcional, dados simulados, segurança básica
-- **Nível 2 (aprofundamento):** predição por regressão, correlação, padrões de tipo, logs completos
+- **Nível 2 (aprofundamento):** predição por regressão, correlação, padrões de projeto, logs completos

@@ -1,0 +1,3 @@
+O processo para rodar esse projeto é simples. 
+Entra com a pasta descompactada no seu IDE, e roda com python api/app.py
+o login é admin e a senha é 000000000000

@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.pyc
+.DS_Store
+.claude/
+venv/
+env/
+.venv/
+data/usuarios.json
+data/alunos.json
+data/turmas.json
+data/indicadores.json
+.pytest_cache/
+*.log
+*.local.json
