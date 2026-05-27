@@ -207,13 +207,6 @@
                 <span id="alertBadge" style="display:none;position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:var(--accent);color:#fff;border-radius:20px;padding:.1rem .5rem;font-size:.65rem;font-weight:700"></span>
             </a>
         </li>
-        <li class="nav-section" id="navAdminSection" style="display:none">Admin</li>
-        <li class="nav-item" id="navAdminItem" style="display:none">
-            <a class="nav-link" data-view="admin" onclick="showView('admin');return false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/><path d="M16 11l2 2 4-4"/></svg>
-                Controle de Acesso
-            </a>
-        </li>
     </ul>
 
     <div class="user-profile">
@@ -1311,8 +1304,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nome) document.getElementById('userName').textContent = nome;
 
     if (perfil === 'admin') {
-        document.getElementById('navAdminSection').style.display = '';
-        document.getElementById('navAdminItem').style.display = '';
+        if (document.getElementById('navAdminSection')) document.getElementById('navAdminSection').style.display = '';
+        if (document.getElementById('navAdminItem')) document.getElementById('navAdminItem').style.display = '';
     }
 
     document.getElementById('btnLogout').addEventListener('click', e => {
