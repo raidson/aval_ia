@@ -363,7 +363,7 @@ class IndicadorService:
     # Geração de indicadores persistidos
     # ------------------------------------------------------------------ #
 
-    def gerar_indicadores_aluno(self, aluno: Aluno, periodo: int) -> list:
+    def gerar_indicadores_aluno(self, aluno: Aluno, periodo: int, salvar: bool = True) -> list:
         """Gera e persiste todos os indicadores do aluno no período."""
         indicadores = []
 
@@ -401,7 +401,8 @@ class IndicadorService:
                 descricao=descricao,
                 periodo=periodo,
             )
-            self._repo.salvar(ind.id, ind.to_dict())
+            if salvar:
+                self._repo.salvar(ind.id, ind.to_dict())
             indicadores.append(ind)
 
         return indicadores

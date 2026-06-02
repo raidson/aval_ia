@@ -26,7 +26,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
         body {
-            background: linear-gradient(-45deg, #BFDBFE, #93C5FD, #BAE6FD, #DBEAFE);
+            background: linear-gradient(-45deg, #EEF2FF, #E0E9FF, #EFF6FF, #DBEAFE);
             background-size: 400% 400%;
             animation: gradientBG 18s ease infinite;
             color: var(--text-primary);
@@ -50,7 +50,7 @@
             position: fixed;
             border-radius: 50%;
             filter: blur(80px);
-            opacity: 0.25;
+            opacity: 0.18;
             pointer-events: none;
             animation: float 10s ease-in-out infinite;
         }
@@ -114,7 +114,7 @@
             width: 100%;
             padding: 2.25rem 2.5rem;
             border-radius: 1.25rem;
-            box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.1);
+            box-shadow: 0 12px 40px -8px rgba(37, 99, 235, 0.15), 0 0 0 1px rgba(148,163,184,0.2);
             position: relative;
             overflow: hidden;
             animation: slideUp 0.6s ease-out 0.2s both;
@@ -293,8 +293,8 @@
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
-            background: rgba(255,255,255,0.55);
-            border: 1px solid rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.75);
+            border: 1px solid rgba(148,163,184,0.35);
             border-radius: 2rem;
             padding: 0.35rem 0.8rem;
             font-size: 0.7rem;
@@ -321,12 +321,6 @@
     <div class="orb orb-3"></div>
 
     <div class="page-wrapper">
-
-        <!-- Brand -->
-        <div class="brand-header">
-            <div class="brand-name">NEXUS</div>
-            <div class="brand-subtitle">Monitoramento &amp; Predição Acadêmica</div>
-        </div>
 
         <!-- Card de Login -->
         <div class="login-container">
@@ -374,6 +368,11 @@
 
                 <div id="messageBox" class="message"></div>
             </form>
+
+            <p style="text-align:center;margin-top:1.25rem;font-size:0.8rem;color:var(--text-secondary)">
+                Não tem uma conta?
+                <a href="/cadastro" style="color:var(--primary-color);font-weight:600;text-decoration:none">Criar conta</a>
+            </p>
         </div>
 
         <!-- Feature pills -->

@@ -26,6 +26,12 @@ class Repositorio:
         self._dados[id] = entidade_dict
         self._persistir()
 
+    def salvar_lote(self, itens: list) -> None:
+        """Salva múltiplas entidades de uma vez em lote."""
+        for id_, entidade_dict in itens:
+            self._dados[id_] = entidade_dict
+        self._persistir()
+
     def buscar(self, id: str) -> Optional[dict]:
         """Busca uma entidade pelo ID. Retorna None se não encontrada."""
         return self._dados.get(id)

@@ -9,7 +9,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import hashlib
 import uuid
+from services.database import init_db
 from services.repositorio import Repositorio
+from services.repositorio_sqlite import RepositorioSQLite
 from services.aluno_service import AlunoService
 
 ALUNOS_SEED = [
@@ -39,8 +41,9 @@ FREQUENCIAS_SEED = [
 ]
 
 def popular_banco():
-    repo = Repositorio("data/alunos.json")
-    repo_usuarios = Repositorio("data/usuarios.json")
+    init_db()
+    repo = RepositorioSQLite("alunos")
+    repo_usuarios = RepositorioSQLite("usuarios")
     service = AlunoService(repo)
 
     print("Populando alunos e usuários de alunos...")
