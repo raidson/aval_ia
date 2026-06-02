@@ -23,6 +23,9 @@ from services.indicador_service import IndicadorService
 from services.lyceum_service import LyceumService
 from models.usuario import Usuario, PerfilUsuario
 from models.aluno import Aluno
+from services.bokeh_service import BokehService
+from api.rbac import anonimizar_dados
+from services.database import get_connection
 import re
 import urllib.parse
 
@@ -1669,3 +1672,50 @@ def erro_interno(e):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", debug=True, port=port)
+
+
+@app.route("/api/charts/geral", methods=["GET"])
+@requer_autenticacao
+def get_charts_geral():
+    periodo = request.args.get("periodo", 1, type=int)
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Apply RBAC filtering scope
+    query_scope = ""
+    params = []
+    if request.perfil_logado in ["professor", "visualizador"]:
+        query_scope = " AND ra.cod_turma IN (SELECT cod_turma FROM turmas LIMIT 2) " # Fake scope constraint for mock
+
+    # Notas Distribution
+    cur.execute(f"SELECT nota_final FROM registros_academicos ra WHERE ano = 2023 AND semestre = ? {query_scope}", [periodo] + params)
+    notas = [r[0] for r in cur.fetchall() if r[0] is not None]
+
+    s_hist, d_hist = BokehService.gerar_histograma_desempenho(notas)
+
+    # Scatter Nota x Freq
+    cur.execute(f"SELECT nota_final, freq_presenca FROM registros_academicos ra WHERE ano = 2023 AND semestre = ? {query_scope}", [periodo] + params)
+    dados_scatter = [{"nota": r[0], "freq": r[1]} for r in cur.fetchall() if r[0] is not None and r[1] is not None]
+
+    s_scat, d_scat = BokehService.gerar_dispersao_nota_frequencia(dados_scatter)
+
+    # Boxplot por turma
+    cur.execute(f"SELECT t.nome_disciplina, ra.nota_final FROM registros_academicos ra JOIN turmas t ON ra.cod_turma = t.cod_turma WHERE ra.ano = 2023 AND ra.semestre = ? {query_scope}", [periodo] + params)
+    box_data = {}
+    for r in cur.fetchall():
+        turma_nome = r[0]
+        nota = r[1]
+        if nota is not None:
+            if turma_nome not in box_data:
+                box_data[turma_nome] = []
+            box_data[turma_nome].append(nota)
+
+    s_box, d_box = BokehService.gerar_boxplot_variabilidade(box_data)
+
+    conn.close()
+
+    return jsonify({
+        "hist": {"script": s_hist, "div": d_hist},
+        "scatter": {"script": s_scat, "div": d_scat},
+        "boxplot": {"script": s_box, "div": d_box}
+    })

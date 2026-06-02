@@ -3,7 +3,14 @@ openpyxl>=3.1.0
 pytest>=8.0.0
 requests
 beautifulsoup4
-<<<<<<< HEAD
 pandas>=2.0.0
-=======
->>>>>>> 2a43a279f169309cd5647db158a765bde4452470
+Jinja2>=2.9
+numpy>=1.16
+narwhals>=1.13
+packaging>=16.8
+contourpy>=1.2
+Pillow>=7.1.0
+PyYAML>=3.10
+tornado>=6.2
+bokeh
+pydantic

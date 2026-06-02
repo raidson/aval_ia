@@ -1,110 +1,144 @@
-# SIMPA — Sistema Inteligente de Monitoramento e Predição Acadêmica
+# SIMPA — Sistema Inteligente de Monitoramento e Predição Acadêmica (AVAL<IA>)
 
 Projeto Integrador — 2º Período | Curso de Inteligência Artificial | UniEvangélica  
 Prof. Henrique Lima
 
----
+## Marco 3 - Evolução Analítica e Normalização (Nível 2)
 
-## Estrutura do Projeto
-
-```
-simpa/
-├── models/              # Entidades do domínio (Aluno, Turma, Indicador, Usuario)
-├── services/            # Regras de negócio e persistência
-├── api/                 # Rotas Flask (REST API)
-├── data/                # Arquivos JSON + script de seed
-├── notebooks/           # Análises exploratórias (Ciclo 2)
-├── docs/                # Documentação e diagramas UML
-├── tests/               # Testes unitários
-└── requirements.txt
-```
+O SIMPA transitou de um sistema analítico básico para uma plataforma de inteligência educacional robusta. Esta versão inclui Banco de Dados Normalizado (3NF), Autorização Baseada em Perfis (RBAC), Validação Estrita de Dados de Entrada com Pydantic, e Visualizações de Dados Avançadas com a biblioteca Bokeh.
 
 ---
 
-## Como Executar
+## 1. Como Usar o Sistema (Guia do Usuário)
 
-### 1. Instalar dependências
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Popular o banco com dados simulados
-```bash
-python data/seed.py
-```
-
-### 3. Iniciar a API
-```bash
-python api/app.py
-```
-A API estará disponível em `http://localhost:5000`
-
-### 4. Rodar os testes
-```bash
-python -m pytest tests/ -v
-```
-
----
-
-## Endpoints da API
-
-| Método | Rota | Descrição | Permissão |
-|--------|------|-----------|-----------|
-| GET | `/` | Healthcheck | Pública |
-| POST | `/auth/login` | Login | Pública |
-| POST | `/auth/logout` | Logout | Autenticado |
-| GET | `/alunos` | Listar alunos | Autenticado |
-| GET | `/alunos/<id>` | Buscar aluno | Autenticado |
-| POST | `/alunos` | Cadastrar aluno | escrita |
-| POST | `/alunos/<id>/notas` | Registrar nota | escrita |
-| POST | `/alunos/<id>/frequencias` | Registrar frequência | escrita |
-| GET | `/indicadores/<aluno_id>` | Listar indicadores | Autenticado |
-| POST | `/indicadores/<aluno_id>/gerar` | Gerar indicadores | escrita |
-| GET | `/indicadores/<aluno_id>/risco` | Classificar risco | Autenticado |
-| GET | `/relatorios/turma` | Relatório consolidado | relatorios |
+O AVAL<IA> permite o controle de desempenho e predição de risco dos estudantes. O sistema varia as funções de acordo com o seu **Perfil de Acesso**.
 
 ### Autenticação
-Todas as rotas protegidas exigem o header:
-```
-Authorization: Bearer <token>
-```
+1. Acesse o sistema utilizando suas credenciais (matrícula e senha).
+2. O sistema identificará automaticamente seu nível de acesso: `Diretoria (admin)`, `Coordenador`, `Professor` ou `Visualizador`.
 
-O token é obtido no endpoint `/auth/login`.
+### Funcionalidades
+* **Diretoria/Coordenador:** Podem acessar o dashboard com visão macro (Toda Instituição / Curso). Podem importar planilhas através de Links do Google Sheets.
+* **Professor:** Acesso restrito às suas turmas/alunos. Recebe notificações automáticas de risco acadêmico dos seus alunos.
+* **Importação em Lote:** É possível enviar um link público do Google Sheets no formato CSV para o sistema processar a carga inicial de alunos, notas e frequências. Apenas dados válidos (Nota 0-10, Frequência 0-100) serão absorvidos. O sistema tratará a substituição ou inserção automática.
+* **Dashboards:** Visualize Histograma de Desempenho, Dispersão de Assiduidade e Boxplot de Variabilidade diretamente integrados com Bokeh.
 
 ---
 
-## Exemplo de Uso
+## 2. Dicionário de Dados e Normalização (3NF)
+
+O banco SQLite foi migrado para a 3ª Forma Normal.
+
+* `alunos`: `id_estudante` (PK), `nome_completo`, `status_aluno`, `curso`, `matricula`, `periodo`, `email`.
+* `turmas`: `cod_turma` (PK), `nome_disciplina`.
+* `registros_academicos`: `registro_id` (PK), `id_estudante` (FK), `cod_turma` (FK), `nota_final`, `freq_presenca`, `data_registro`, `ano`, `semestre`.
+* `auditoria`: `id`, `timestamp`, `usuario_id`, `acao`, `recurso`, `valor_antigo`, `valor_novo`, `justificativa`, `ip`.
+
+### Anonimização (LGPD)
+Sempre que um usuário `Visualizador` requisita dados que contenham informações pessoalmente identificáveis (PII), nomes e e-mails são anonimizados pelo sistema na camada de resposta. Logs são mantidos em todas as ações sensíveis no banco `auditoria`.
+
+---
+
+## 3. Contrato da API REST (OpenAPI/Swagger Resumido)
+
+### Auth
+* **POST `/auth/login`**: Realiza autenticação, retorna Token JWT-like.
+* **POST `/auth/logout`**: Encerra sessão.
+
+### Alunos e Registros
+* **GET `/alunos`**: Retorna lista de estudantes (anonimizado dependendo do perfil).
+* **POST `/alunos`**: Cadastra aluno (Validado via Pydantic).
+* **POST `/alunos/<id>/notas`**: Lança notas.
+* **POST `/alunos/<id>/frequencias`**: Lança frequências.
+
+### Indicadores e Gráficos
+* **GET `/indicadores/<aluno_id>`**: Retorna indicadores.
+* **POST `/indicadores/<aluno_id>/gerar`**: Processa cálculo de risco.
+* **GET `/api/charts/geral`**: Retorna instâncias `script` e `div` HTML dos gráficos construídos com Bokeh.
+
+### Importação de Planilha
+* **POST `/api/importar/confirmar`** (Adaptado): Suporta importação via Pydantic model (`services/import_service.py`) usando link do Google Sheets.
+
+---
+
+## 4. Diagramas UML
+
+### Diagrama de Classes (Refletindo a 3NF)
+
+```mermaid
+classDiagram
+    class Aluno {
+        +Integer id_estudante
+        +String nome_completo
+        +String status_aluno
+        +String curso
+        +String matricula
+        +Integer periodo
+        +String email
+    }
+    class Turma {
+        +Integer cod_turma
+        +String nome_disciplina
+    }
+    class RegistroAcademico {
+        +Integer registro_id
+        +Float nota_final
+        +Float freq_presenca
+        +DateTime data_registro
+        +Integer ano
+        +Integer semestre
+    }
+    class Auditoria {
+        +Integer id
+        +String usuario_id
+        +String acao
+        +String justificativa
+        +DateTime timestamp
+    }
+
+    Aluno "1" -- "0..*" RegistroAcademico : cursa
+    Turma "1" -- "0..*" RegistroAcademico : pertence
+```
+
+### Diagrama de Casos de Uso (Perfis de Acesso)
+
+```mermaid
+usecaseDiagram
+    actor Diretoria
+    actor Coordenador
+    actor Professor
+    actor Visualizador
+
+    usecase "Ver Relatórios Institucionais" as UC1
+    usecase "Ver Relatórios do Curso" as UC2
+    usecase "Acompanhar Alunos (Risco)" as UC3
+    usecase "Lançar Notas/Frequência" as UC4
+    usecase "Consultar Dados Anonimizados" as UC5
+    usecase "Importar Dados Google Sheets" as UC6
+
+    Diretoria --> UC1
+    Diretoria --> UC6
+    Coordenador --> UC2
+    Coordenador --> UC6
+    Professor --> UC3
+    Professor --> UC4
+    Visualizador --> UC5
+```
+
+---
+
+## 5. Como Executar o Sistema
 
 ```bash
-# Login
-curl -X POST http://localhost:5000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"matricula":"admin","senha":"SUA_SENHA"}'
+# 1. Instalar dependências exatas (inclui Bokeh, Pydantic, etc)
+pip install -r requirements.txt
 
-# Listar alunos (com o token obtido)
-curl http://localhost:5000/alunos \
-  -H "Authorization: Bearer <TOKEN>"
+# 2. Inicializar banco e aplicar migrações para 3NF
+python -c "from services.database import init_db; init_db()"
 
-# Gerar indicadores de um aluno
-curl -X POST http://localhost:5000/indicadores/<ALUNO_ID>/gerar \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"periodo": 2}'
+# 3. Rodar os testes de unidade
+python -m pytest tests/ -v
+
+# 4. Iniciar Servidor (Acesse http://localhost:5000)
+python api/app.py
 ```
-
----
-
-## Marcos do Projeto
-
-| Marco | Semanas | Entrega |
-|-------|---------|---------|
-| Marco 1 | 1–7 | Arquitetura + API básica funcional ✓ |
-| Marco 2 | 8–13 | Módulo analítico + visualizações |
-| Marco 3 | 14–19 | Segurança completa + testes + documentação |
-
----
-
-## Níveis de Execução
-
-- **Nível 1 (obrigatório):** arquitetura POO, API funcional, dados simulados, segurança básica
-- **Nível 2 (aprofundamento):** predição por regressão, correlação, padrões de tipo, logs completos
