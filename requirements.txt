@@ -3,4 +3,7 @@ openpyxl>=3.1.0
 pytest>=8.0.0
 requests
 beautifulsoup4
+<<<<<<< HEAD
 pandas>=2.0.0
+=======
+>>>>>>> 2a43a279f169309cd5647db158a765bde4452470
