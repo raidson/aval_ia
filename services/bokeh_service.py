@@ -1,100 +1,199 @@
+"""
+Módulo: services/bokeh_service.py
+Serviço para geração de gráficos interativos com a biblioteca Bokeh.
+"""
+
 from bokeh.plotting import figure
 from bokeh.embed import components
-from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.models import ColumnDataSource, HoverTool, NumeralTickFormatter
+from bokeh.transform import factor_cmap
+from bokeh.palettes import Spectral6, Category10
 import pandas as pd
-import numpy as np
 
 class BokehService:
-    @staticmethod
-    def gerar_histograma_desempenho(notas: list) -> tuple:
-        """Gera histograma de distribuição de notas (script, div)."""
-        if not notas:
-            return "", "<div>Sem dados suficientes para Histograma.</div>"
-
-        hist, edges = np.histogram(notas, bins=10, range=[0, 10])
-        p = figure(title="Distribuição de Notas Institucionais", tools="", background_fill_color="#fafafa")
-        p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],
-               fill_color="navy", line_color="white", alpha=0.5)
-
-        p.y_range.start = 0
-        p.xaxis.axis_label = 'Nota Final'
-        p.yaxis.axis_label = 'Qtd Alunos'
-        p.grid.grid_line_color="white"
-
-        s, d = components(p)
-        s = s.replace("<script", '<script crossorigin="anonymous"')
-        return s, d
+    """Encapsula a lógica de criação de gráficos Bokeh para o SIMPA."""
 
     @staticmethod
-    def gerar_dispersao_nota_frequencia(dados: list) -> tuple:
-        """Gera gráfico de dispersão: Nota x Frequência (script, div).
-        dados = [{'nota': 8.5, 'freq': 85.0, 'aluno': 'Nome'}, ...]
+    def _get_theme_params():
+        """Define parâmetros de tema base para os gráficos."""
+        return {
+            "background_fill_color": "#ffffff",
+            "border_fill_color": "#ffffff",
+            "outline_line_color": "#e0e0e0",
+            "outline_line_alpha": 0.5,
+        }
+
+    @staticmethod
+    def gerar_dispersao_nota_frequencia(pontos: list, turma_nome: str):
         """
-        if not dados:
-            return "", "<div>Sem dados suficientes para Dispersão.</div>"
+        Gera um gráfico de dispersão (scatter plot) comparando Média Final vs. Frequência.
 
-        df = pd.DataFrame(dados)
+        Args:
+            pontos (list): Uma lista de dicionários, cada um contendo 'media', 'frequencia' e 'nome'.
+            turma_nome (str): Nome da turma para o título do gráfico.
+
+        Returns:
+            tuple: (script, div) componentes do gráfico Bokeh.
+        """
+        if not pontos:
+            return None, None
+
+        df = pd.DataFrame(pontos)
         source = ColumnDataSource(df)
 
-        p = figure(title="Correlação: Assiduidade vs Sucesso", x_axis_label='Frequência (%)', y_axis_label='Nota Final', tools="pan,wheel_zoom,box_zoom,reset")
+        p = figure(
+            height=350,
+            sizing_mode="stretch_width",
+            tools="pan,wheel_zoom,box_zoom,reset,save",
+            title=f"Correlação: Média vs. Frequência ({turma_nome})",
+            x_axis_label="Frequência Média (%)",
+            y_axis_label="Média Final",
+        )
+        p.theme = BokehService._get_theme_params()
 
-        p.scatter(x='freq', y='nota', size=8, source=source, fill_color="orange", alpha=0.6)
-
-        hover = HoverTool()
-        hover.tooltips = [
-            ("Nota", "@nota"),
-            ("Frequência", "@freq%")
-        ]
+        # Ferramenta de Hover
+        hover = HoverTool(
+            tooltips=[
+                ("Aluno", "@nome"),
+                ("Média", "@media{0.00}"),
+                ("Frequência", "@frequencia{0.0}%"),
+            ]
+        )
         p.add_tools(hover)
+
+        # Adiciona os glifos (círculos)
+        p.circle(
+            x="frequencia",
+            y="media",
+            source=source,
+            size=10,
+            color="#6366f1",
+            alpha=0.7,
+            legend_label="Alunos",
+        )
+
+        # Linha de Regressão Linear Simples
+        if len(df) > 1:
+            par = df.polyfit(x='frequencia', y='media', deg=1)
+            df['regressao'] = df['frequencia'] * par[0] + par[1]
+            p.line(x='frequencia', y='regressao', source=source, color='tomato', line_width=2, legend_label='Tendência (Regressão)')
+
+        p.legend.location = "top_left"
+        p.legend.click_policy = "hide"
+        p.xaxis.formatter = NumeralTickFormatter(format="0,0'%'")
 
         s, d = components(p)
         s = s.replace("<script", '<script crossorigin="anonymous"')
         return s, d
 
     @staticmethod
-    def gerar_boxplot_variabilidade(dados_por_turma: dict) -> tuple:
-        """Gera boxplots para comparar turmas (script, div).
-        dados_por_turma = {'Matemática': [7, 8, 5, 9, 10], 'Física': [5, 6, 4, 7, 3]}
+    def gerar_histograma_desempenho(medias: list, turma_nome: str):
         """
-        if not dados_por_turma:
-            return "", "<div>Sem dados suficientes para Boxplot.</div>"
+        Gera um histograma da distribuição de médias finais.
 
-        turmas = list(dados_por_turma.keys())
-        p = figure(x_range=turmas, title="Variabilidade de Desempenho por Turma", tools="", background_fill_color="#eaefef")
+        Args:
+            medias (list): Lista de médias finais dos alunos.
+            turma_nome (str): Nome da turma para o título do gráfico.
 
-        # Manually calculating quartiles for plotting since BoxPlot is high-level Holoviews or requires explicit whisker mapping in Bokeh figure
-        q1s, q2s, q3s, iqrs, uppers, lowers = [], [], [], [], [], []
+        Returns:
+            tuple: (script, div) componentes do gráfico Bokeh.
+        """
+        if not medias:
+            return None, None
 
-        for t in turmas:
-            notas = pd.Series(dados_por_turma[t])
-            if notas.empty:
-                q1s.append(0); q2s.append(0); q3s.append(0); uppers.append(0); lowers.append(0)
-                continue
-            q1 = notas.quantile(0.25)
-            q2 = notas.quantile(0.50)
-            q3 = notas.quantile(0.75)
-            iqr = q3 - q1
-            upper = min(q3 + 1.5*iqr, notas.max())
-            lower = max(q1 - 1.5*iqr, notas.min())
+        hist, edges = pd.np.histogram(medias, bins=[0, 2, 4, 6, 8, 10])
+        
+        df = pd.DataFrame({
+            'contagem': hist,
+            'esquerda': edges[:-1],
+            'direita': edges[1:]
+        })
+        df['faixa'] = [f"{l}-{r}" for l, r in zip(df['esquerda'], df['direita'])]
+        source = ColumnDataSource(df)
 
-            q1s.append(q1); q2s.append(q2); q3s.append(q3); uppers.append(upper); lowers.append(lower)
+        p = figure(
+            x_range=df['faixa'],
+            height=350,
+            sizing_mode="stretch_width",
+            title=f"Distribuição de Desempenho ({turma_nome})",
+            x_axis_label="Faixa de Média",
+            y_axis_label="Nº de Alunos",
+            tools="hover,save",
+            tooltips=[("Faixa", "@faixa"), ("Alunos", "@contagem")],
+        )
+        p.theme = BokehService._get_theme_params()
 
-        # Stems
-        p.segment(turmas, lowers, turmas, q1s, line_color="black")
-        p.segment(turmas, uppers, turmas, q3s, line_color="black")
-
-        # Boxes
-        p.vbar(turmas, 0.7, q2s, q3s, fill_color="#E08E79", line_color="black")
-        p.vbar(turmas, 0.7, q1s, q2s, fill_color="#3B8686", line_color="black")
-
-        # Whiskers
-        p.rect(turmas, lowers, 0.2, 0.01, line_color="black")
-        p.rect(turmas, uppers, 0.2, 0.01, line_color="black")
+        p.vbar(
+            x='faixa',
+            top='contagem',
+            width=0.8,
+            source=source,
+            color="#34d399",
+            alpha=0.8
+        )
 
         p.xgrid.grid_line_color = None
-        p.ygrid.grid_line_color = "white"
-        p.grid.grid_line_width = 2
-        p.xaxis.major_label_text_font_size="12pt"
+        p.y_range.start = 0
+
+        s, d = components(p)
+        s = s.replace("<script", '<script crossorigin="anonymous"')
+        return s, d
+
+    @staticmethod
+    def gerar_boxplot_disciplinas(disciplinas_data: list, turma_nome: str):
+        """
+        Gera um boxplot comparando o desempenho entre as disciplinas.
+
+        Args:
+            disciplinas_data (list): Lista de dicionários, cada um com 'disciplina' e 'medias'.
+            turma_nome (str): Nome da turma para o título do gráfico.
+
+        Returns:
+            tuple: (script, div) componentes do gráfico Bokeh.
+        """
+        if not disciplinas_data:
+            return None, None
+
+        cats = [d['disciplina'] for d in disciplinas_data]
+        
+        # Estrutura de dados para o boxplot
+        df_data = {'disciplina': [], 'media': []}
+        for d in disciplinas_data:
+            for m in d['medias']:
+                df_data['disciplina'].append(d['disciplina'])
+                df_data['media'].append(m)
+        
+        df = pd.DataFrame(df_data)
+        
+        p = figure(
+            x_range=cats,
+            height=350,
+            sizing_mode="stretch_width",
+            title=f"Variabilidade de Notas por Disciplina ({turma_nome})",
+            tools="pan,wheel_zoom,box_zoom,reset,save",
+            y_axis_label="Média Final"
+        )
+        p.theme = BokehService._get_theme_params()
+
+        # Boxplot
+        q1 = df.groupby('disciplina')['media'].quantile(q=0.25)
+        q2 = df.groupby('disciplina')['media'].quantile(q=0.5)
+        q3 = df.groupby('disciplina')['media'].quantile(q=0.75)
+        iqr = q3 - q1
+        upper = q3 + 1.5 * iqr
+        lower = q1 - 1.5 * iqr
+
+        source = ColumnDataSource(data=dict(
+            base=cats, q1=q1, q2=q2, q3=q3, upper=upper, lower=lower
+        ))
+
+        p.vbar(x='base', width=0.7, bottom='q2', top='q3', source=source, fill_color=Spectral6[0], line_color="black")
+        p.vbar(x='base', width=0.7, bottom='q1', top='q2', source=source, fill_color=Spectral6[1], line_color="black")
+        p.rect(x='base', y='lower', width=0.2, height=0.01, source=source, line_color="black")
+        p.rect(x='base', y='upper', width=0.2, height=0.01, source=source, line_color="black")
+        
+        p.xgrid.grid_line_color = None
+        p.xaxis.major_label_orientation = pd.np.pi / 4
 
         s, d = components(p)
         s = s.replace("<script", '<script crossorigin="anonymous"')

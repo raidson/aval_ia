@@ -1,134 +1,140 @@
 """
 Módulo: services/database.py
-Conexão e inicialização do banco SQLite para o projeto Nexus.
+Configuração e gerenciamento da conexão com o banco de dados SQLite.
 """
 
 import sqlite3
 import os
+from flask import g
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "simpa.db")
+# Define o caminho do banco de dados. Prioriza a variável de ambiente.
+DATABASE_URL = os.environ.get("DATABASE_URL", "database.db")
 
+def get_connection():
+    """
+    Abre uma nova conexão com o banco de dados se não houver uma no contexto da aplicação.
+    Reutiliza a conexão existente se já estiver no contexto 'g' do Flask.
+    """
+    db = getattr(g, "_database", None)
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE_URL)
+        db.row_factory = sqlite3.Row  # Permite acessar colunas pelo nome
+    return db
 
-def get_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA journal_mode = WAL")
-    return conn
+def close_connection(exception=None):
+    """
+    Fecha a conexão com o banco de dados ao final da requisição.
+    Esta função é ideal para ser registrada com o 'app.teardown_appcontext'.
+    """
+    db = getattr(g, "_database", None)
+    if db is not None:
+        db.close()
 
-
-def init_db() -> None:
-    """Cria todas as tabelas e índices se não existirem."""
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+def init_db():
+    """
+    Inicializa o banco de dados criando as tabelas necessárias se elas não existirem.
+    """
     conn = get_connection()
-    try:
-        cur = conn.cursor()
+    cursor = conn.cursor()
 
-        # Migração automática: se auditoria existir e 'id' for INTEGER, dropamos para recriar como TEXT
-        try:
-            cur.execute("PRAGMA table_info(auditoria)")
-            info = cur.fetchall()
-            if info:
-                id_col = [col for col in info if col[1] == "id"]
-                if id_col and "INTEGER" in id_col[0][2].upper():
-                    cur.execute("DROP TABLE auditoria")
-                    conn.commit()
-        except Exception:
-            pass
+    # Tabela de Alunos
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS alunos (
+            id TEXT PRIMARY KEY,
+            matricula TEXT UNIQUE NOT NULL,
+            nome TEXT NOT NULL,
+            curso TEXT,
+            periodo INTEGER,
+            ano_ingresso INTEGER,
+            sem_ingresso INTEGER,
+            cod_curso INTEGER,
+            unidade TEXT,
+            cidade TEXT,
+            estado TEXT,
+            sexo TEXT,
+            data_nascimento TEXT,
+            idade INTEGER,
+            prouni TEXT,
+            fies TEXT,
+            bolsa TEXT,
+            email TEXT,
+            ativo BOOLEAN DEFAULT TRUE,
+            notas TEXT,
+            frequencias TEXT
+        )
+    """)
 
-        cur.executescript("""
-            CREATE TABLE IF NOT EXISTS alunos (
-                id                TEXT PRIMARY KEY,
-                matricula         TEXT UNIQUE NOT NULL,
-                nome              TEXT NOT NULL,
-                curso             TEXT,
-                cod_curso         INTEGER,
-                periodo           INTEGER,
-                ano_ingresso      INTEGER,
-                sem_ingresso      INTEGER,
-                unidade           TEXT,
-                cidade            TEXT,
-                estado            TEXT,
-                sexo              TEXT,
-                data_nascimento   TEXT,
-                idade             INTEGER,
-                prouni            TEXT,
-                fies              TEXT,
-                bolsa             TEXT,
-                email             TEXT,
-                ativo             INTEGER DEFAULT 1
-            );
+    # Tabela de Disciplinas
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS disciplinas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cod_disciplina INTEGER UNIQUE,
+            nome TEXT NOT NULL,
+            carga_horaria INTEGER
+        )
+    """)
 
-            CREATE TABLE IF NOT EXISTS disciplinas (
-                cod_disciplina    INTEGER PRIMARY KEY,
-                nome              TEXT NOT NULL,
-                carga_horaria     INTEGER
-            );
+    # Tabela de Registros Acadêmicos (Fatos)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS registros_academicos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            aluno_id TEXT NOT NULL,
+            cod_disciplina INTEGER,
+            nome_disciplina TEXT,
+            turma TEXT,
+            serie INTEGER,
+            ano INTEGER,
+            semestre INTEGER,
+            va1 REAL,
+            va2 REAL,
+            va3 REAL,
+            media_final REAL,
+            media_calculada REAL,
+            situacao TEXT,
+            risco_academico TEXT,
+            FOREIGN KEY (aluno_id) REFERENCES alunos (id)
+        )
+    """)
 
-            CREATE TABLE IF NOT EXISTS registros_academicos (
-                id                INTEGER PRIMARY KEY AUTOINCREMENT,
-                aluno_id          TEXT NOT NULL REFERENCES alunos(id),
-                cod_disciplina    INTEGER REFERENCES disciplinas(cod_disciplina),
-                nome_disciplina   TEXT,
-                turma             TEXT,
-                serie             INTEGER,
-                ano               INTEGER NOT NULL,
-                semestre          INTEGER NOT NULL,
-                va1               REAL,
-                va2               REAL,
-                va3               REAL,
-                media_final       REAL,
-                media_calculada   REAL,
-                situacao          TEXT CHECK(situacao IN ('Aprovado', 'Rep_Nota', 'Rep_Freq')),
-                risco_academico   TEXT CHECK(risco_academico IN ('Baixo', 'Medio', 'Alto')),
-                UNIQUE(aluno_id, cod_disciplina, ano, semestre)
-            );
+    # Tabela de Indicadores
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS indicadores (
+            id TEXT PRIMARY KEY,
+            aluno_id TEXT NOT NULL,
+            periodo INTEGER NOT NULL,
+            iaa REAL,
+            irp REAL,
+            ira REAL,
+            percentil REAL,
+            zscore REAL,
+            risco TEXT,
+            FOREIGN KEY (aluno_id) REFERENCES alunos (id)
+        )
+    """)
 
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id          TEXT PRIMARY KEY,
-                nome        TEXT NOT NULL,
-                matricula   TEXT UNIQUE NOT NULL,
-                perfil      TEXT NOT NULL CHECK(perfil IN ('admin', 'coordenador', 'professor', 'visualizador')),
-                senha_hash  TEXT NOT NULL,
-                ativo       INTEGER DEFAULT 1,
-                criado_em   TEXT
-            );
+    # Tabela de Usuários para controle de acesso
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id TEXT PRIMARY KEY,
+            nome TEXT NOT NULL,
+            matricula TEXT UNIQUE NOT NULL,
+            email TEXT,
+            perfil TEXT NOT NULL,
+            cursos TEXT,
+            senha_hash TEXT NOT NULL,
+            ativo BOOLEAN DEFAULT TRUE
+        )
+    """)
 
-            CREATE TABLE IF NOT EXISTS auditoria (
-                id          TEXT PRIMARY KEY,
-                usuario_id  TEXT,
-                acao        TEXT NOT NULL,
-                recurso     TEXT,
-                detalhe     TEXT,
-                ip          TEXT,
-                timestamp   TEXT DEFAULT (datetime('now','localtime'))
-            );
+    # Tabela de Auditoria
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS auditoria (
+            id TEXT PRIMARY KEY,
+            usuario_id TEXT,
+            acao TEXT NOT NULL,
+            detalhe TEXT,
+            timestamp TEXT NOT NULL
+        )
+    """)
 
-            CREATE TABLE IF NOT EXISTS indicadores (
-                id                TEXT PRIMARY KEY,
-                aluno_id          TEXT NOT NULL REFERENCES alunos(id),
-                tipo              TEXT NOT NULL,
-                valor             REAL,
-                descricao         TEXT,
-                periodo           INTEGER NOT NULL,
-                gerado_em         TEXT,
-                UNIQUE(aluno_id, tipo, periodo)
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_reg_aluno      ON registros_academicos(aluno_id);
-            CREATE INDEX IF NOT EXISTS idx_reg_ano_sem    ON registros_academicos(ano, semestre);
-            CREATE INDEX IF NOT EXISTS idx_reg_situacao   ON registros_academicos(situacao);
-            CREATE INDEX IF NOT EXISTS idx_reg_risco      ON registros_academicos(risco_academico);
-            CREATE INDEX IF NOT EXISTS idx_alunos_curso   ON alunos(curso);
-        """)
-
-        cur.execute("PRAGMA table_info(alunos)")
-        colunas_alunos = [row[1] for row in cur.fetchall()]
-        if "notas" not in colunas_alunos:
-            cur.execute("ALTER TABLE alunos ADD COLUMN notas TEXT")
-        if "frequencias" not in colunas_alunos:
-            cur.execute("ALTER TABLE alunos ADD COLUMN frequencias TEXT")
-
-        conn.commit()
-    finally:
-        conn.close()
+    conn.commit()
