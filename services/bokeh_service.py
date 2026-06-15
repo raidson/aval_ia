@@ -21,7 +21,9 @@ class BokehService:
         p.yaxis.axis_label = 'Qtd Alunos'
         p.grid.grid_line_color="white"
 
-        return components(p)
+        s, d = components(p)
+        s = s.replace("<script", '<script crossorigin="anonymous"')
+        return s, d
 
     @staticmethod
     def gerar_dispersao_nota_frequencia(dados: list) -> tuple:
@@ -45,7 +47,9 @@ class BokehService:
         ]
         p.add_tools(hover)
 
-        return components(p)
+        s, d = components(p)
+        s = s.replace("<script", '<script crossorigin="anonymous"')
+        return s, d
 
     @staticmethod
     def gerar_boxplot_variabilidade(dados_por_turma: dict) -> tuple:
@@ -92,4 +96,6 @@ class BokehService:
         p.grid.grid_line_width = 2
         p.xaxis.major_label_text_font_size="12pt"
 
-        return components(p)
+        s, d = components(p)
+        s = s.replace("<script", '<script crossorigin="anonymous"')
+        return s, d

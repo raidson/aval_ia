@@ -21,17 +21,17 @@ def test_calculo_risco_desvio_padrao():
 
 def test_pydantic_validators():
     # Pass case
-    schema = RegistroAcademicoSchema(cod_turma=101, nota_final=10.0, freq_presenca=100.0, ano=2023, semestre=1)
+    schema = RegistroAcademicoSchema(cod_turma=101, nota_final=10.0, freq_presenca=100, ano=2023, semestre=1)
     assert schema.nota_final == 10.0
 
     # Fail nota > 10
     with pytest.raises(ValidationError):
-        RegistroAcademicoSchema(cod_turma=101, nota_final=11.0, freq_presenca=100.0, ano=2023, semestre=1)
+        RegistroAcademicoSchema(cod_turma=101, nota_final=101.0, freq_presenca=100, ano=2023, semestre=1)
 
     # Fail nota < 0
     with pytest.raises(ValidationError):
-        RegistroAcademicoSchema(cod_turma=101, nota_final=-1.0, freq_presenca=100.0, ano=2023, semestre=1)
+        RegistroAcademicoSchema(cod_turma=101, nota_final=-1.0, freq_presenca=100, ano=2023, semestre=1)
 
     # Fail freq > 100
     with pytest.raises(ValidationError):
-        RegistroAcademicoSchema(cod_turma=101, nota_final=5.0, freq_presenca=105.0, ano=2023, semestre=1)
+        RegistroAcademicoSchema(cod_turma=101, nota_final=5.0, freq_presenca=105, ano=2023, semestre=1)

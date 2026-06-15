@@ -18,21 +18,21 @@ class AlunoImportSchema(BaseModel):
 
 class RegistroAcademicoSchema(BaseModel):
     cod_turma: int = Field(..., description="Código da Turma")
-    nota_final: float = Field(0.0, description="Nota final (0.0 a 10.0)")
-    freq_presenca: float = Field(0.0, description="Frequência (0.0 a 100.0)")
+    nota_final: float = Field(0.0, description="Nota final (0.0 a 100.0)")
+    freq_presenca: int = Field(0, description="Frequência (0 a 100 inteiro)")
     ano: int = Field(..., description="Ano do registro")
     semestre: int = Field(..., description="Semestre do registro")
 
     @field_validator('nota_final')
     def validate_nota(cls, v):
-        if not (0.0 <= v <= 10.0):
-            raise ValueError("A nota deve estar entre 0.0 e 10.0")
+        if not (0.0 <= v <= 100.0):
+            raise ValueError("A nota deve estar entre 0.0 e 100.0")
         return v
 
     @field_validator('freq_presenca')
     def validate_freq(cls, v):
-        if not (0.0 <= v <= 100.0):
-            raise ValueError("A frequência deve estar entre 0.0 e 100.0")
+        if not (0 <= v <= 100):
+            raise ValueError("A frequência deve estar entre 0 e 100")
         return v
 
 class TurmaSchema(BaseModel):
