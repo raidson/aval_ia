@@ -22,6 +22,7 @@ O AVAL<IA> permite o controle de desempenho e predição de risco dos estudantes
 * **Professor:** Acesso restrito às suas turmas/alunos. Recebe notificações automáticas de risco acadêmico dos seus alunos.
 * **Importação em Lote:** É possível enviar um link público do Google Sheets no formato CSV para o sistema processar a carga inicial de alunos, notas e frequências. Apenas dados válidos (Nota 0-10, Frequência 0-100) serão absorvidos. O sistema tratará a substituição ou inserção automática.
 * **Dashboards:** Visualize Histograma de Desempenho, Dispersão de Assiduidade e Boxplot de Variabilidade diretamente integrados com Bokeh.
+* **Consolidado do Aluno (Visão 360º):** Permite clicar em qualquer aluno na tabela detalhada de turmas para abrir um modal contendo ficha de risco, lista de evidências pedagógicas, histórico de evolução por período (gráfico de linha) e 4 gráficos comparativos individuais (Média Geral, Frequência Média, IAA e IRP) contra a média da respectiva turma dispostos em um grid 2x2 responsivo. Os gráficos utilizam colorização dinâmica inteligente (verde `#10b981` para cima/na média da turma, vermelho `#f43f5e` para abaixo da média) e setas direcionais (▲/▼) no título para diagnóstico visual imediato.
 
 ---
 
@@ -55,6 +56,7 @@ Sempre que um usuário `Visualizador` requisita dados que contenham informaçõe
 * **GET `/indicadores/<aluno_id>`**: Retorna indicadores.
 * **POST `/indicadores/<aluno_id>/gerar`**: Processa cálculo de risco.
 * **GET `/api/charts/geral`**: Retorna instâncias `script` e `div` HTML dos gráficos construídos com Bokeh.
+* **GET `/api/alunos/<matricula>/consolidado`**: Retorna dados demográficos do aluno, risco, evidências pedagógicas, histórico de evolução e 5 gráficos Bokeh (evolução temporal de notas + 4 gráficos comparativos individuais de indicadores contra a média da turma respectiva).
 
 ### Importação de Planilha
 * **POST `/api/importar/confirmar`** (Adaptado): Suporta importação via Pydantic model (`services/import_service.py`) usando link do Google Sheets.
