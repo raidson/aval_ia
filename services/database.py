@@ -5,30 +5,65 @@ Configuração e gerenciamento da conexão com o banco de dados SQLite.
 
 import sqlite3
 import os
-from flask import g
+from flask import g, current_app, has_app_context
 
 # Define o caminho do banco de dados. Prioriza a variável de ambiente.
 DATABASE_URL = os.environ.get("DATABASE_URL", "database.db")
+
+_local_db = None
 
 def get_connection():
     """
     Abre uma nova conexão com o banco de dados se não houver uma no contexto da aplicação.
     Reutiliza a conexão existente se já estiver no contexto 'g' do Flask.
+    Suporta execução fora do contexto Flask para scripts/testes.
     """
-    db = getattr(g, "_database", None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE_URL)
-        db.row_factory = sqlite3.Row  # Permite acessar colunas pelo nome
-    return db
+    global _local_db
+    if has_app_context():
+        db = getattr(g, "_database", None)
+        try:
+            if db is not None:
+                db.execute("SELECT 1")
+        except sqlite3.ProgrammingError:
+            db = g._database = None
+
+        if db is None:
+            db_url = current_app.config.get("DATABASE_URL", DATABASE_URL)
+            if db_url.startswith("sqlite:///"):
+                db_url = db_url.replace("sqlite:///", "")
+            db = g._database = sqlite3.connect(db_url)
+            db.row_factory = sqlite3.Row  # Permite acessar colunas pelo nome
+        return db
+    else:
+        # Fora do contexto da aplicação (ex: scripts, seed, testes fora do flask request)
+        try:
+            if _local_db is not None:
+                _local_db.execute("SELECT 1")
+        except sqlite3.ProgrammingError:
+            _local_db = None
+
+        if _local_db is None:
+            db_url = DATABASE_URL
+            if db_url.startswith("sqlite:///"):
+                db_url = db_url.replace("sqlite:///", "")
+            _local_db = sqlite3.connect(db_url)
+            _local_db.row_factory = sqlite3.Row
+        return _local_db
 
 def close_connection(exception=None):
     """
     Fecha a conexão com o banco de dados ao final da requisição.
     Esta função é ideal para ser registrada com o 'app.teardown_appcontext'.
     """
-    db = getattr(g, "_database", None)
-    if db is not None:
-        db.close()
+    global _local_db
+    if has_app_context():
+        db = getattr(g, "_database", None)
+        if db is not None:
+            db.close()
+    else:
+        if _local_db is not None:
+            _local_db.close()
+            _local_db = None
 
 def init_db():
     """
@@ -101,13 +136,11 @@ def init_db():
         CREATE TABLE IF NOT EXISTS indicadores (
             id TEXT PRIMARY KEY,
             aluno_id TEXT NOT NULL,
+            tipo TEXT NOT NULL,
+            valor REAL NOT NULL,
+            descricao TEXT,
             periodo INTEGER NOT NULL,
-            iaa REAL,
-            irp REAL,
-            ira REAL,
-            percentil REAL,
-            zscore REAL,
-            risco TEXT,
+            gerado_em TEXT,
             FOREIGN KEY (aluno_id) REFERENCES alunos (id)
         )
     """)
@@ -138,3 +171,5 @@ def init_db():
     """)
 
     conn.commit()
+    if not has_app_context():
+        conn.close()

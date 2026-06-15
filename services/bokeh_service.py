@@ -9,6 +9,7 @@ from bokeh.models import ColumnDataSource, HoverTool, NumeralTickFormatter
 from bokeh.transform import factor_cmap
 from bokeh.palettes import Spectral6, Category10
 import pandas as pd
+import numpy as np
 
 class BokehService:
     """Encapsula a lógica de criação de gráficos Bokeh para o SIMPA."""
@@ -39,6 +40,12 @@ class BokehService:
             return None, None
 
         df = pd.DataFrame(pontos)
+        
+        # Linha de Regressão Linear Simples
+        if len(df) > 1:
+            par = np.polyfit(df['frequencia'], df['media'], 1)
+            df['regressao'] = df['frequencia'] * par[0] + par[1]
+
         source = ColumnDataSource(df)
 
         p = figure(
@@ -49,7 +56,8 @@ class BokehService:
             x_axis_label="Frequência Média (%)",
             y_axis_label="Média Final",
         )
-        p.theme = BokehService._get_theme_params()
+        for k, v in BokehService._get_theme_params().items():
+            setattr(p, k, v)
 
         # Ferramenta de Hover
         hover = HoverTool(
@@ -72,10 +80,7 @@ class BokehService:
             legend_label="Alunos",
         )
 
-        # Linha de Regressão Linear Simples
         if len(df) > 1:
-            par = df.polyfit(x='frequencia', y='media', deg=1)
-            df['regressao'] = df['frequencia'] * par[0] + par[1]
             p.line(x='frequencia', y='regressao', source=source, color='tomato', line_width=2, legend_label='Tendência (Regressão)')
 
         p.legend.location = "top_left"
@@ -101,7 +106,7 @@ class BokehService:
         if not medias:
             return None, None
 
-        hist, edges = pd.np.histogram(medias, bins=[0, 2, 4, 6, 8, 10])
+        hist, edges = np.histogram(medias, bins=[0, 2, 4, 6, 8, 10])
         
         df = pd.DataFrame({
             'contagem': hist,
@@ -121,7 +126,8 @@ class BokehService:
             tools="hover,save",
             tooltips=[("Faixa", "@faixa"), ("Alunos", "@contagem")],
         )
-        p.theme = BokehService._get_theme_params()
+        for k, v in BokehService._get_theme_params().items():
+            setattr(p, k, v)
 
         p.vbar(
             x='faixa',
@@ -173,7 +179,8 @@ class BokehService:
             tools="pan,wheel_zoom,box_zoom,reset,save",
             y_axis_label="Média Final"
         )
-        p.theme = BokehService._get_theme_params()
+        for k, v in BokehService._get_theme_params().items():
+            setattr(p, k, v)
 
         # Boxplot
         q1 = df.groupby('disciplina')['media'].quantile(q=0.25)
@@ -193,7 +200,7 @@ class BokehService:
         p.rect(x='base', y='upper', width=0.2, height=0.01, source=source, line_color="black")
         
         p.xgrid.grid_line_color = None
-        p.xaxis.major_label_orientation = pd.np.pi / 4
+        p.xaxis.major_label_orientation = np.pi / 4
 
         s, d = components(p)
         s = s.replace("<script", '<script crossorigin="anonymous"')

@@ -23,13 +23,11 @@ class TestApi(unittest.TestCase):
         Configuração executada antes de cada teste.
         Cria uma nova instância da aplicação e um banco de dados limpo.
         """
-        self.app = create_app()
-        self.app.config['TESTING'] = True
-        self.app.config['DATABASE_URL'] = "sqlite:///:memory:"
+        self.db_filename = f"test_database_{self._testMethodName}.db"
+        self.app = create_app({"TESTING": True, "DATABASE_URL": self.db_filename})
         self.client = self.app.test_client()
 
         with self.app.app_context():
-            init_db()
             self._populate_test_data()
 
         self.token = "test-token-for-setup"
@@ -40,7 +38,13 @@ class TestApi(unittest.TestCase):
     def tearDown(self):
         """Limpeza executada após cada teste."""
         _tokens_ativos.clear()
-        # O contexto da aplicação é automaticamente tratado pelo with self.app.app_context()
+        with self.app.app_context():
+            close_connection()
+        try:
+            if os.path.exists(self.db_filename):
+                os.remove(self.db_filename)
+        except Exception as e:
+            pass
 
     def _populate_test_data(self):
         """Popula o banco de dados em memória com dados de teste."""
@@ -93,7 +97,7 @@ class TestApi(unittest.TestCase):
         data = json.loads(response.data)
         self.assertIn("scatter", data)
         self.assertIn("script", data["scatter"])
-        self.assertTrue(data["scatter"]["script"].strip().startswith("(function()"))
+        self.assertTrue(data["scatter"]["script"].strip().startswith("<script"))
 
 if __name__ == "__main__":
     unittest.main()
