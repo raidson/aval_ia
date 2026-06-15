@@ -8,6 +8,8 @@ import math
 import statistics
 from models.aluno import Aluno
 from models.indicador import Indicador, Risco, NivelRisco
+from services.risk_service import RiskService
+
 from services.repositorio import Repositorio
 
 
@@ -26,11 +28,11 @@ class IndicadorService:
 
     def calcular_media_geral(self, aluno: Aluno, periodo: int) -> float:
         """Média aritmética das notas do aluno no período."""
-        notas = [n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo]
-        if not notas:
+        notas = [n.get("nota") for n in aluno.get_notas() if n.get("periodo") == periodo]
+        notas_processadas = RiskService.pre_processar_notas(notas)
+        if not notas_processadas:
             return 0.0
-        return round(statistics.mean(notas), 2)
-
+        return round(statistics.mean(notas_processadas), 2)
     def calcular_mediana(self, aluno: Aluno, periodo: int) -> float:
         """Mediana das notas do aluno no período."""
         notas = [n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo]
@@ -40,10 +42,11 @@ class IndicadorService:
 
     def calcular_frequencia_media(self, aluno: Aluno, periodo: int) -> float:
         """Média de frequência do aluno no período."""
-        freqs = [f["percentual"] for f in aluno.get_frequencias() if f["periodo"] == periodo]
-        if not freqs:
+        freqs = [f.get("percentual") for f in aluno.get_frequencias() if f["periodo"] == periodo]
+        freqs_processadas = RiskService.pre_processar_frequencias(freqs)
+        if not freqs_processadas:
             return 0.0
-        return round(statistics.mean(freqs), 2)
+        return round(statistics.mean(freqs_processadas), 2)
 
     def calcular_desvio_padrao(self, aluno: Aluno, periodo: int) -> float:
         """Desvio padrão das notas — indicador de instabilidade."""

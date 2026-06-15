@@ -36,7 +36,7 @@ class TestAluno:
     def test_nota_invalida_levanta_excecao(self):
         aluno = self._aluno()
         with pytest.raises(ValueError):
-            aluno.adicionar_nota("POO", 11.0, 2)
+            aluno.adicionar_nota("POO", 101.0, 2)
         with pytest.raises(ValueError):
             aluno.adicionar_nota("POO", -1.0, 2)
 
@@ -48,7 +48,7 @@ class TestAluno:
     def test_frequencia_invalida_levanta_excecao(self):
         aluno = self._aluno()
         with pytest.raises(ValueError):
-            aluno.adicionar_frequencia("POO", 110.0, 2)
+            aluno.adicionar_frequencia("POO", 110, 2)
 
     def test_serializa_e_desserializa(self):
         aluno = self._aluno()

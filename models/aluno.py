@@ -26,11 +26,11 @@ class Aluno:
 
     def adicionar_nota(self, disciplina: str, nota: float, periodo: int) -> None:
         """Registra uma nota para o aluno em uma disciplina."""
-        if not (0.0 <= nota <= 10.0):
-            raise ValueError(f"Nota inválida: {nota}. Deve estar entre 0 e 10.")
+        from services.validation_service import ValidationService
+        nota_validada = ValidationService.validar_nota(nota)
         self._notas.append({
             "disciplina": disciplina,
-            "nota": nota,
+            "nota": nota_validada,
             "periodo": periodo
         })
 
@@ -48,11 +48,11 @@ class Aluno:
 
     def adicionar_frequencia(self, disciplina: str, percentual: float, periodo: int) -> None:
         """Registra o percentual de frequência em uma disciplina."""
-        if not (0.0 <= percentual <= 100.0):
-            raise ValueError(f"Frequência inválida: {percentual}. Deve estar entre 0 e 100.")
+        from services.validation_service import ValidationService
+        freq_validada = ValidationService.validar_frequencia(percentual)
         self._frequencias.append({
             "disciplina": disciplina,
-            "percentual": percentual,
+            "percentual": freq_validada,
             "periodo": periodo
         })
 
