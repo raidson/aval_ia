@@ -205,3 +205,88 @@ class BokehService:
         s, d = components(p)
         s = s.replace("<script", '<script crossorigin="anonymous"')
         return s, d
+
+    @staticmethod
+    def gerar_grafico_comparativo_indicador(aluno_val: float, turma_val: float, titulo: str, label_y: str, max_y: float, formato_y: str = "0.0"):
+        """
+        Gera um gráfico comparando o aluno vs. média da turma para um único indicador.
+        """
+        categories = ['Aluno', 'Média da Turma']
+        aluno_f = float(aluno_val) if aluno_val is not None else 0.0
+        turma_f = float(turma_val) if turma_val is not None else 0.0
+        vals = [aluno_f, turma_f]
+        
+        # Color dynamically based on comparison
+        if aluno_f >= turma_f:
+            student_color = "#10b981"  # Emerald/Green (Positive/Above or equal to average)
+            status_label = "▲ Acima/Na Média"
+        else:
+            student_color = "#f43f5e"  # Rose/Red (Negative/Below average)
+            status_label = "▼ Abaixo da Média"
+            
+        colors = [student_color, "#cbd5e1"]  # Student color, slate-300 for class average
+        
+        source = ColumnDataSource(data=dict(categories=categories, vals=vals, colors=colors))
+        
+        p = figure(
+            x_range=categories,
+            y_range=(0, max_y),
+            height=220,
+            sizing_mode="stretch_width",
+            title=f"{titulo} ({status_label})",
+            toolbar_location=None,
+            tools="hover",
+            tooltips=[("Categoria", "@categories"), ("Valor", f"@vals{{{formato_y}}}")],
+            y_axis_label=label_y
+        )
+        
+        for k, v in BokehService._get_theme_params().items():
+            setattr(p, k, v)
+            
+        p.vbar(x='categories', top='vals', width=0.4, source=source, color='colors')
+        
+        p.xgrid.grid_line_color = None
+        
+        s, d = components(p)
+        s = s.replace("<script", '<script crossorigin="anonymous"')
+        return s, d
+
+    @staticmethod
+    def gerar_evolucao_aluno(periodos: list, medias: list, aluno_nome: str):
+        """
+        Gera um gráfico de linha mostrando a evolução acadêmica do aluno através dos períodos.
+        """
+        if not periodos:
+            return None, None
+            
+        x_labels = [f"{p}º Per." for p in periodos]
+        
+        df = pd.DataFrame({
+            'periodo': x_labels,
+            'media': [float(m) if m is not None else 0.0 for m in medias]
+        })
+        
+        source = ColumnDataSource(df)
+        
+        p = figure(
+            x_range=x_labels,
+            y_range=(0, 10.5),
+            height=250,
+            sizing_mode="stretch_width",
+            title=f"Acompanhamento de Evolução: {aluno_nome}",
+            toolbar_location=None,
+            tools="hover",
+            tooltips=[("Período", "@periodo"), ("Média", "@media{0.00}")]
+        )
+        
+        for k, v in BokehService._get_theme_params().items():
+            setattr(p, k, v)
+            
+        p.line(x='periodo', y='media', source=source, line_width=3, color="#34d399")
+        p.circle(x='periodo', y='media', source=source, size=8, color="#34d399", fill_color="white", line_width=2)
+        
+        p.xgrid.grid_line_color = None
+        
+        s, d = components(p)
+        s = s.replace("<script", '<script crossorigin="anonymous"')
+        return s, d

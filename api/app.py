@@ -1712,6 +1712,153 @@ def create_app(config=None):
         except Exception as e:
             return jsonify({"erro": f"Erro ao gerar gráficos: {str(e)}"}), 500
 
+    @app.route("/api/alunos/<matricula>/consolidado", methods=["GET"])
+    @requer_autenticacao
+    def get_aluno_consolidado(matricula):
+        try:
+            import json
+            resultado = repo_alunos.filtrar("matricula", matricula)
+            if not resultado:
+                return jsonify({"erro": "Aluno não encontrado."}), 404
+            
+            dados_aluno = resultado[0]
+            aluno = Aluno.from_dict(dados_aluno)
+            periodo = aluno.periodo or 1
+            
+            # 1. Indicadores do aluno no período atual
+            media = indicador_service.calcular_media_geral(aluno, periodo)
+            freq = indicador_service.calcular_frequencia_media(aluno, periodo)
+            cv = indicador_service.calcular_coeficiente_variacao(aluno, periodo)
+            iaa = indicador_service.calcular_iaa(aluno, periodo)
+            irp = indicador_service.calcular_irp(aluno, periodo)
+            
+            # Classificação de risco
+            risco = indicador_service.classificar_risco(aluno, periodo)
+            
+            # 2. Busca a turma e período letivo do aluno
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT DISTINCT turma FROM registros_academicos 
+                WHERE aluno_id = ? AND serie = ? LIMIT 1
+            """, (aluno.id, periodo))
+            row_turma = cursor.fetchone()
+            turma_id = row_turma[0] if row_turma else None
+            
+            if not turma_id:
+                cursor.execute("""
+                    SELECT DISTINCT turma FROM registros_academicos 
+                    WHERE aluno_id = ? LIMIT 1
+                """, (aluno.id,))
+                row_turma = cursor.fetchone()
+                turma_id = row_turma[0] if row_turma else "Geral"
+
+            # 3. Busca os outros alunos na mesma turma para calcular comparativos
+            cursor.execute("""
+                SELECT DISTINCT aluno_id FROM registros_academicos
+                WHERE turma = ? AND serie = ?
+            """, (turma_id, periodo))
+            aluno_ids = [r[0] for r in cursor.fetchall()]
+            
+            if not aluno_ids:
+                cursor.execute("""
+                    SELECT DISTINCT aluno_id FROM registros_academicos
+                    WHERE turma = ?
+                """, (turma_id,))
+                aluno_ids = [r[0] for r in cursor.fetchall()]
+
+            class_students = []
+            for a_id in list(set(aluno_ids)):
+                a_data = repo_alunos.buscar(a_id)
+                if a_data:
+                    class_students.append(Aluno.from_dict(a_data))
+            
+            if not class_students:
+                class_students = [aluno]
+
+            # Médias da turma
+            medias_turma = []
+            freqs_turma = []
+            iaas_turma = []
+            irps_turma = []
+            for a_obj in class_students:
+                m_val = indicador_service.calcular_media_geral(a_obj, periodo)
+                f_val = indicador_service.calcular_frequencia_media(a_obj, periodo)
+                i_val = indicador_service.calcular_iaa(a_obj, periodo)
+                ir_val = indicador_service.calcular_irp(a_obj, periodo)
+                if m_val > 0: medias_turma.append(m_val)
+                if f_val > 0: freqs_turma.append(f_val)
+                if i_val > 0: iaas_turma.append(i_val)
+                if ir_val > 0: irps_turma.append(ir_val)
+
+            avg_media_turma = sum(medias_turma) / len(medias_turma) if medias_turma else 5.0
+            avg_freq_turma = sum(freqs_turma) / len(freqs_turma) if freqs_turma else 75.0
+            avg_iaa_turma = sum(iaas_turma) / len(iaas_turma) if iaas_turma else 5.0
+            avg_irp_turma = sum(irps_turma) / len(irps_turma) if irps_turma else 20.0
+            
+            zscore = indicador_service.calcular_zscore_aluno(class_students, aluno.id, periodo)
+            percentil = indicador_service.calcular_percentil_aluno(class_students, aluno.id, periodo)
+            
+            aluno_metrics = {
+                "media_geral": media,
+                "frequencia_media": freq,
+                "iaa": iaa,
+                "irp": irp
+            }
+            
+            turma_metrics = {
+                "media_geral": avg_media_turma,
+                "frequencia_media": avg_freq_turma,
+                "iaa": avg_iaa_turma,
+                "irp": avg_irp_turma
+            }
+            
+            # 4. Histórico de evolução (médias de todos os períodos)
+            ev_data = indicador_service.calcular_tendencia_periodo(aluno)
+            periodos_list = ev_data.get("periodos", [periodo])
+            medias_list = ev_data.get("medias", [media])
+            
+            # 5. Gráficos Bokeh
+            script_media, div_media = BokehService.gerar_grafico_comparativo_indicador(
+                media, avg_media_turma, "Média Geral", "Média", 10.5, "0.00"
+            )
+            script_freq, div_freq = BokehService.gerar_grafico_comparativo_indicador(
+                freq, avg_freq_turma, "Frequência Média", "Frequência (%)", 105.0, "0.0"
+            )
+            script_iaa, div_iaa = BokehService.gerar_grafico_comparativo_indicador(
+                iaa, avg_iaa_turma, "IAA (Índice de Aproveitamento Acadêmico)", "IAA", 10.5, "0.00"
+            )
+            script_irp, div_irp = BokehService.gerar_grafico_comparativo_indicador(
+                irp, avg_irp_turma, "IRP (Índice de Rendimento do Período)", "IRP", 105.0, "0.0"
+            )
+            script_ev, div_ev = BokehService.gerar_evolucao_aluno(periodos_list, medias_list, aluno.nome)
+            
+            conn.close()
+            
+            return jsonify({
+                "aluno": {
+                    "id": aluno.id,
+                    "nome": aluno.nome,
+                    "matricula": aluno.matricula,
+                    "curso": aluno.curso or "Engenharia de Software",
+                    "periodo": periodo,
+                    "risco": risco.nivel.value,
+                    "evidencias": risco.evidencias,
+                    "zscore": round(zscore, 2),
+                    "percentil": round(percentil, 1)
+                },
+                "chart_media": {"script": script_media, "div": div_media},
+                "chart_frequencia": {"script": script_freq, "div": div_freq},
+                "chart_iaa": {"script": script_iaa, "div": div_iaa},
+                "chart_irp": {"script": script_irp, "div": div_irp},
+                "evolucao_chart": {"script": script_ev, "div": div_ev}
+            }), 200
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({"erro": f"Erro ao gerar consolidado do aluno: {str(e)}"}), 500
+
     # ------------------------------------------------------------------ #
     # Healthcheck
     # ------------------------------------------------------------------ #

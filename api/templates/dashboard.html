@@ -387,6 +387,31 @@
                 </div>
                 <div id="chartBoxplot"></div>
             </div>
+
+            <!-- Tabela de Alunos e Indicadores Detalhados -->
+            <div class="block" style="margin-top:1.5rem">
+                <div class="block-header">
+                    <div><div class="block-title">Indicadores Detalhados de Alunos</div><div class="block-sub">Desempenho, Frequência, IAA, IRP, Z-Score, Percentil e Risco Individual</div></div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aluno</th>
+                                <th>Matrícula</th>
+                                <th>Média Geral</th>
+                                <th>Frequência</th>
+                                <th>IAA</th>
+                                <th>IRP</th>
+                                <th>Z-Score</th>
+                                <th>Percentil</th>
+                                <th>Risco</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaAlunosIndBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -613,6 +638,64 @@
         <div class="modal-footer">
             <button class="btn" onclick="fecharModal('syncModal')">Cancelar</button>
             <button class="btn btn-primary" id="btnDoSync">Sincronizar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Consolidado do Aluno -->
+<div class="modal-bg" id="modalAlunoConsolidado">
+    <div class="modal-box" style="width: 750px; max-width: 95vw;">
+        <div class="modal-title" id="mAlunoTitulo">Consolidado do Aluno</div>
+        
+        <!-- Ficha do Aluno -->
+        <div style="background: var(--bg-dark); padding: 1.25rem; border-radius: 14px; margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.85rem; border: 1px solid var(--glass-border);">
+            <div>
+                <div><strong>Nome:</strong> <span id="mAlunoNome">—</span></div>
+                <div style="margin-top: 0.4rem;"><strong>Matrícula:</strong> <span id="mAlunoMatricula">—</span></div>
+                <div style="margin-top: 0.4rem;"><strong>Curso:</strong> <span id="mAlunoCurso">—</span></div>
+            </div>
+            <div>
+                <div><strong>Período:</strong> <span id="mAlunoPeriodo">—</span>º Período</div>
+                <div style="margin-top: 0.4rem;"><strong>Risco Acadêmico:</strong> <span id="mAlunoRiscoBadge">—</span></div>
+                <div style="margin-top: 0.4rem;"><strong>Evolução/Classificação:</strong> Z-Score <span id="mAlunoZscore">—</span> | Percentil <span id="mAlunoPercentil">—</span></div>
+            </div>
+        </div>
+
+        <!-- Evidências de Risco -->
+        <div id="mAlunoEvidenciasContainer" style="display:none; background: rgba(244,63,94,0.08); border: 1px solid rgba(244,63,94,0.2); padding: 1rem; border-radius: 14px; margin-bottom: 1.5rem;">
+            <div style="font-weight: 700; color: var(--accent); font-size: 0.82rem; margin-bottom: 0.5rem;">Evidências de Risco Detectadas:</div>
+            <ul id="mAlunoEvidenciasLista" style="font-size: 0.8rem; padding-left: 1.2rem; color: var(--text-main);">
+                <!-- Preenchido via JS -->
+            </ul>
+        </div>
+
+        <!-- Layout de Gráficos -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div>
+                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 1rem;">Comparativo: Aluno vs. Média da Turma</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+                    <div class="block" style="padding: 1.25rem; margin-bottom: 0; box-shadow: none; border: 1px solid var(--glass-border);">
+                        <div id="chartAlunoMedia" style="min-height: 220px; width: 100%;"></div>
+                    </div>
+                    <div class="block" style="padding: 1.25rem; margin-bottom: 0; box-shadow: none; border: 1px solid var(--glass-border);">
+                        <div id="chartAlunoFrequencia" style="min-height: 220px; width: 100%;"></div>
+                    </div>
+                    <div class="block" style="padding: 1.25rem; margin-bottom: 0; box-shadow: none; border: 1px solid var(--glass-border);">
+                        <div id="chartAlunoIaa" style="min-height: 220px; width: 100%;"></div>
+                    </div>
+                    <div class="block" style="padding: 1.25rem; margin-bottom: 0; box-shadow: none; border: 1px solid var(--glass-border);">
+                        <div id="chartAlunoIrp" style="min-height: 220px; width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="block" style="padding: 1.25rem; margin-bottom: 0; box-shadow: none; border: 1px solid var(--glass-border); width: 100%;">
+                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 1rem;">Evolução de Notas por Período</div>
+                <div id="chartAlunoEvolucao" style="min-height: 250px; width: 100%;"></div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" onclick="fecharModal('modalAlunoConsolidado')">Fechar</button>
         </div>
     </div>
 </div>
@@ -1110,10 +1193,20 @@ function renderChartFreqTurmas(turmas) {
         document.getElementById('dashTurmasPanel').style.display = 'none';
         document.getElementById('dashAlunosPanel').style.display = '';
 
-        // Limpa gráficos antigos
+        // Limpa gráficos e tabela antigos
         document.getElementById('chartScatter').innerHTML = '<p>Carregando gráfico...</p>';
         document.getElementById('chartHistograma').innerHTML = '<p>Carregando gráfico...</p>';
         document.getElementById('chartBoxplot').innerHTML = '<p>Carregando gráfico...</p>';
+        document.getElementById('tabelaAlunosIndBody').innerHTML = '<tr><td colspan="9" style="text-align:center">Carregando indicadores...</td></tr>';
+
+        // Busca o relatório detalhado da turma (KPIs e Lista de Alunos)
+        const relatorio = await apiFetch(`/turmas/${turmaId}/relatorio`);
+        if (relatorio && !relatorio.erro) {
+            renderKPIsTurma(relatorio);
+            renderAlunosIndicadores(relatorio.alunos);
+        } else {
+            console.error("Erro ao carregar relatório da turma:", relatorio?.erro);
+        }
 
         // Busca os componentes dos gráficos Bokeh
         const chartData = await apiFetch(`/api/charts/turma/${turmaId}`);
@@ -1140,7 +1233,109 @@ function renderChartFreqTurmas(turmas) {
                 document.getElementById('chartBoxplot').innerHTML = '<p>Não há dados suficientes para este gráfico.</p>';
             }
         } else {
-            document.getElementById('dashAlunosPanel').innerHTML = `<p>Erro ao carregar dados da turma: ${chartData?.erro || 'Erro desconhecido'}</p>`;
+            console.error("Erro ao carregar gráficos Bokeh:", chartData?.erro);
+        }
+    }
+
+    function renderAlunosIndicadores(alunos) {
+        document.getElementById('tabelaAlunosIndBody').innerHTML = alunos.map(a => {
+            const media = a.media_geral !== null && a.media_geral !== undefined ? a.media_geral.toFixed(2) : '—';
+            const freq = a.frequencia_media !== null && a.frequencia_media !== undefined ? a.frequencia_media.toFixed(1) + '%' : '—';
+            const iaa = a.iaa !== null && a.iaa !== undefined ? a.iaa.toFixed(2) : '—';
+            const irp = a.irp !== null && a.irp !== undefined ? a.irp.toFixed(1) : '—';
+            const zscore = a.zscore !== null && a.zscore !== undefined ? a.zscore.toFixed(2) : '—';
+            const percentil = a.percentil !== null && a.percentil !== undefined ? a.percentil.toFixed(1) + '%' : '—';
+            
+            return `
+            <tr class="turma-row" onclick="verConsolidadoAluno('${a.matricula}')">
+                <td><strong>${a.nome}</strong></td>
+                <td style="color:var(--text-dim)">${a.matricula}</td>
+                <td><strong>${media}</strong></td>
+                <td>${freq}</td>
+                <td>${iaa}</td>
+                <td>${irp}</td>
+                <td>${zscore}</td>
+                <td>${percentil}</td>
+                <td>
+                    <span class="badge ${riskClass(a.risco)}">${riskLabel(a.risco)}</span>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    async function verConsolidadoAluno(matricula) {
+        // Limpa modal antigo
+        document.getElementById('mAlunoNome').textContent = 'Carregando...';
+        document.getElementById('mAlunoMatricula').textContent = '';
+        document.getElementById('mAlunoCurso').textContent = '';
+        document.getElementById('mAlunoPeriodo').textContent = '';
+        document.getElementById('mAlunoZscore').textContent = '';
+        document.getElementById('mAlunoPercentil').textContent = '';
+        document.getElementById('mAlunoRiscoBadge').outerHTML = '<span id="mAlunoRiscoBadge">—</span>';
+        document.getElementById('mAlunoEvidenciasContainer').style.display = 'none';
+        document.getElementById('mAlunoEvidenciasLista').innerHTML = '';
+        document.getElementById('chartAlunoMedia').innerHTML = '<p style="text-align:center">Carregando...</p>';
+        document.getElementById('chartAlunoFrequencia').innerHTML = '<p style="text-align:center">Carregando...</p>';
+        document.getElementById('chartAlunoIaa').innerHTML = '<p style="text-align:center">Carregando...</p>';
+        document.getElementById('chartAlunoIrp').innerHTML = '<p style="text-align:center">Carregando...</p>';
+        document.getElementById('chartAlunoEvolucao').innerHTML = '<p style="text-align:center">Carregando evolução...</p>';
+
+        abrirModal('modalAlunoConsolidado');
+
+        const res = await apiFetch(`/api/alunos/${matricula}/consolidado`);
+        if (res && !res.erro) {
+            const aluno = res.aluno;
+            document.getElementById('mAlunoNome').textContent = aluno.nome;
+            document.getElementById('mAlunoMatricula').textContent = aluno.matricula;
+            document.getElementById('mAlunoCurso').textContent = aluno.curso;
+            document.getElementById('mAlunoPeriodo').textContent = aluno.periodo;
+            document.getElementById('mAlunoZscore').textContent = aluno.zscore;
+            document.getElementById('mAlunoPercentil').textContent = aluno.percentil + '%';
+            
+            // Badge de Risco
+            const badgeEl = document.getElementById('mAlunoRiscoBadge');
+            badgeEl.textContent = riskLabel(aluno.risco);
+            badgeEl.className = `badge ${riskClass(aluno.risco)}`;
+
+            // Evidências
+            if (aluno.evidencias && aluno.evidencias.length > 0) {
+                document.getElementById('mAlunoEvidenciasContainer').style.display = 'block';
+                document.getElementById('mAlunoEvidenciasLista').innerHTML = aluno.evidencias.map(e => `<li>${e}</li>`).join('');
+            }
+
+            // Gráficos
+            if (res.chart_media && res.chart_media.div) {
+                injectBokehChart('chartAlunoMedia', res.chart_media.div, res.chart_media.script);
+            } else {
+                document.getElementById('chartAlunoMedia').innerHTML = '<p>Não foi possível gerar a média geral.</p>';
+            }
+
+            if (res.chart_frequencia && res.chart_frequencia.div) {
+                injectBokehChart('chartAlunoFrequencia', res.chart_frequencia.div, res.chart_frequencia.script);
+            } else {
+                document.getElementById('chartAlunoFrequencia').innerHTML = '<p>Não foi possível gerar a frequência média.</p>';
+            }
+
+            if (res.chart_iaa && res.chart_iaa.div) {
+                injectBokehChart('chartAlunoIaa', res.chart_iaa.div, res.chart_iaa.script);
+            } else {
+                document.getElementById('chartAlunoIaa').innerHTML = '<p>Não foi possível gerar o IAA.</p>';
+            }
+
+            if (res.chart_irp && res.chart_irp.div) {
+                injectBokehChart('chartAlunoIrp', res.chart_irp.div, res.chart_irp.script);
+            } else {
+                document.getElementById('chartAlunoIrp').innerHTML = '<p>Não foi possível gerar o IRP.</p>';
+            }
+
+            if (res.evolucao_chart && res.evolucao_chart.div) {
+                injectBokehChart('chartAlunoEvolucao', res.evolucao_chart.div, res.evolucao_chart.script);
+            } else {
+                document.getElementById('chartAlunoEvolucao').innerHTML = '<p>Não foi possível gerar a evolução.</p>';
+            }
+        } else {
+            document.getElementById('mAlunoTitulo').textContent = 'Erro ao carregar dados';
+            document.getElementById('mAlunoNome').textContent = res?.erro || 'Erro inesperado.';
         }
     }
 
@@ -1148,10 +1343,16 @@ function renderChartFreqTurmas(turmas) {
         document.getElementById('dashBreadcrumb').style.display = 'none';
         document.getElementById('dashTurmasPanel').style.display = '';
         document.getElementById('dashAlunosPanel').style.display = 'none';
-        // Limpa os divs dos gráficos
+        // Limpa os divs dos gráficos e da tabela
         document.getElementById('chartScatter').innerHTML = '';
         document.getElementById('chartHistograma').innerHTML = '';
         document.getElementById('chartBoxplot').innerHTML = '';
+        document.getElementById('tabelaAlunosIndBody').innerHTML = '';
+        
+        // Restaura os KPIs gerais da instituição
+        if (_turmasData && _turmasData.length > 0) {
+            renderKPIsTurmas(_turmasData);
+        }
     }
 
 function renderKPIsTurma(data) {

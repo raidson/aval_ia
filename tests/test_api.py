@@ -99,5 +99,24 @@ class TestApi(unittest.TestCase):
         self.assertIn("script", data["scatter"])
         self.assertTrue(data["scatter"]["script"].strip().startswith("<script"))
 
+    def test_04_get_aluno_consolidado_endpoint(self):
+        """Testa o endpoint consolidado do aluno por matrícula."""
+        response = self.client.get("/api/alunos/2024001/consolidado", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertIn("aluno", data)
+        self.assertEqual(data["aluno"]["matricula"], "2024001")
+        self.assertEqual(data["aluno"]["nome"], "Aluno A")
+        self.assertNotIn("comparativo_chart", data)
+        self.assertIn("chart_media", data)
+        self.assertIn("chart_frequencia", data)
+        self.assertIn("chart_iaa", data)
+        self.assertIn("chart_irp", data)
+        self.assertIn("evolucao_chart", data)
+        self.assertIn("script", data["chart_media"])
+        self.assertIn("script", data["chart_frequencia"])
+        self.assertIn("script", data["chart_iaa"])
+        self.assertIn("script", data["chart_irp"])
+
 if __name__ == "__main__":
     unittest.main()

@@ -6,10 +6,10 @@ Motor de análise estatística — calcula indicadores e classifica risco acadê
 import uuid
 import math
 import statistics
+from typing import Union
 from models.aluno import Aluno
 from models.indicador import Indicador, Risco, NivelRisco
 from services.risk_service import RiskService
-
 from services.repositorio import Repositorio
 
 
@@ -23,54 +23,200 @@ class IndicadorService:
         self._repo = repositorio
 
     # ------------------------------------------------------------------ #
-    # Estatísticas individuais
+    # Estatísticas individuais (Métodos de Cálculo Básicos)
     # ------------------------------------------------------------------ #
 
-    def calcular_media_geral(self, aluno: Aluno, periodo: int) -> float:
-        """Média aritmética das notas do aluno no período."""
-        notas = [n.get("nota") for n in aluno.get_notas() if n.get("periodo") == periodo]
-        notas_processadas = RiskService.pre_processar_notas(notas)
-        if not notas_processadas:
-            return 0.0
-        return round(statistics.mean(notas_processadas), 2)
-    def calcular_mediana(self, aluno: Aluno, periodo: int) -> float:
-        """Mediana das notas do aluno no período."""
-        notas = [n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo]
+    @staticmethod
+    def calcular_media(notas: list[float]) -> float:
+        """
+        Calcula a média aritmética de uma lista de notas.
+
+        Args:
+            notas (list[float]): Lista contendo as notas (0 a 10).
+
+        Returns:
+            float: A média aritmética arredondada para 2 casas decimais, ou 0.0 se a lista estiver vazia.
+        """
         if not notas:
             return 0.0
-        return round(statistics.median(notas), 2)
-
-    def calcular_frequencia_media(self, aluno: Aluno, periodo: int) -> float:
-        """Média de frequência do aluno no período."""
-        freqs = [f.get("percentual") for f in aluno.get_frequencias() if f["periodo"] == periodo]
-        freqs_processadas = RiskService.pre_processar_frequencias(freqs)
-        if not freqs_processadas:
+        try:
+            return round(statistics.mean(notas), 2)
+        except Exception:
             return 0.0
-        return round(statistics.mean(freqs_processadas), 2)
 
-    def calcular_desvio_padrao(self, aluno: Aluno, periodo: int) -> float:
-        """Desvio padrão das notas — indicador de instabilidade."""
-        notas = [n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo]
+    @staticmethod
+    def calcular_media_geral(*args, **kwargs) -> float:
+        """
+        Calcula a média geral do aluno no período ou de uma lista de notas.
+
+        Suporta duas assinaturas:
+        1. calcular_media_geral(notas: list[float]) -> float
+        2. calcular_media_geral(aluno: Aluno, periodo: int) -> float (Compatibilidade)
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            float: Média calculada.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            notas = [n.get("nota") for n in aluno.get_notas() if n.get("periodo") == periodo]
+            notas_processadas = RiskService.pre_processar_notas(notas)
+            if not notas_processadas:
+                return 0.0
+            return round(statistics.mean(notas_processadas), 2)
+
+        notas = args[0] if len(args) > 0 else kwargs.get("notas", [])
+        return IndicadorService.calcular_media(notas)
+
+    @staticmethod
+    def calcular_mediana(*args, **kwargs) -> float:
+        """
+        Calcula a mediana de uma lista de notas ou das notas do aluno no período.
+
+        Suporta duas assinaturas:
+        1. calcular_mediana(notas: list[float]) -> float
+        2. calcular_mediana(aluno: Aluno, periodo: int) -> float (Compatibilidade)
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            float: Mediana calculada.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            notas = [n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo]
+            if not notas:
+                return 0.0
+            return round(statistics.median(notas), 2)
+
+        notas = args[0] if len(args) > 0 else kwargs.get("notas", [])
+        if not notas:
+            return 0.0
+        try:
+            return round(statistics.median(notas), 2)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def calcular_frequencia_media(*args, **kwargs) -> float:
+        """
+        Calcula a média de frequência de uma lista ou para um aluno no período.
+
+        Suporta duas assinaturas:
+        1. calcular_frequencia_media(frequencias: list[float]) -> float
+        2. calcular_frequencia_media(aluno: Aluno, periodo: int) -> float (Compatibilidade)
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            float: Frequência média.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            freqs = [f.get("percentual") for f in aluno.get_frequencias() if f["periodo"] == periodo]
+            freqs_processadas = RiskService.pre_processar_frequencias(freqs)
+            if not freqs_processadas:
+                return 0.0
+            return round(statistics.mean(freqs_processadas), 2)
+
+        freqs = args[0] if len(args) > 0 else kwargs.get("frequencias", [])
+        if not freqs:
+            return 0.0
+        try:
+            return round(statistics.mean(freqs), 2)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def calcular_desvio_padrao(*args, **kwargs) -> float:
+        """
+        Calcula o desvio padrão amostral de uma lista ou das notas do aluno no período.
+
+        Suporta duas assinaturas:
+        1. calcular_desvio_padrao(notas: list[float]) -> float
+        2. calcular_desvio_padrao(aluno: Aluno, periodo: int) -> float (Compatibilidade)
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            float: Desvio padrão amostral. Retorna 0.0 se a lista tiver menos de 2 elementos.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            notas = [n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo]
+            if len(notas) < 2:
+                return 0.0
+            return round(statistics.stdev(notas), 2)
+
+        notas = args[0] if len(args) > 0 else kwargs.get("notas", [])
         if len(notas) < 2:
             return 0.0
-        return round(statistics.stdev(notas), 2)
-
-    def calcular_coeficiente_variacao(self, aluno: Aluno, periodo: int) -> float:
-        """CV = (desvio_padrão / média) × 100 — dispersão relativa das notas."""
-        media = self.calcular_media_geral(aluno, periodo)
-        desvio = self.calcular_desvio_padrao(aluno, periodo)
-        if media == 0:
+        try:
+            return round(statistics.stdev(notas), 2)
+        except Exception:
             return 0.0
-        return round((desvio / media) * 100, 2)
 
-    def calcular_notas_extremas(self, aluno: Aluno, periodo: int) -> dict:
+    @staticmethod
+    def calcular_coeficiente_variacao(*args, **kwargs) -> float:
+        """
+        Calcula o coeficiente de variação em percentual ((desvio_padrao / media) * 100).
+
+        Suporta duas assinaturas:
+        1. calcular_coeficiente_variacao(notas: list[float]) -> float
+        2. calcular_coeficiente_variacao(aluno: Aluno, periodo: int) -> float (Compatibilidade)
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            float: Coeficiente de variação. Retorna 0.0 em caso de divisão por zero.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            media = IndicadorService.calcular_media_geral(aluno, periodo)
+            desvio = IndicadorService.calcular_desvio_padrao(aluno, periodo)
+            if media == 0.0:
+                return 0.0
+            return round((desvio / media) * 100, 2)
+
+        notas = args[0] if len(args) > 0 else kwargs.get("notas", [])
+        if not notas:
+            return 0.0
+        try:
+            media = IndicadorService.calcular_media(notas)
+            if media == 0.0:
+                return 0.0
+            desvio = IndicadorService.calcular_desvio_padrao(notas)
+            return round((desvio / media) * 100, 2)
+        except ZeroDivisionError:
+            return 0.0
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def calcular_notas_extremas(aluno: Aluno, periodo: int) -> dict[str, float]:
         """Retorna nota mínima e máxima no período."""
         notas = [n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo]
         if not notas:
             return {"min": 0.0, "max": 0.0}
         return {"min": round(min(notas), 2), "max": round(max(notas), 2)}
 
-    def calcular_notas_por_disciplina(self, aluno: Aluno, periodo: int) -> dict:
+    def calcular_notas_por_disciplina(self, aluno: Aluno, periodo: int) -> dict[str, float]:
         """Retorna um dicionário {disciplina: nota} para o período."""
         return {
             n["disciplina"]: n["nota"]
@@ -78,26 +224,95 @@ class IndicadorService:
             if n["periodo"] == periodo
         }
 
-    def calcular_amplitude(self, aluno: Aluno, periodo: int) -> float:
-        """Amplitude = nota_max − nota_min — medida de dispersão absoluta."""
-        extremas = self.calcular_notas_extremas(aluno, periodo)
-        return round(extremas["max"] - extremas["min"], 2)
+    @staticmethod
+    def calcular_amplitude(*args, **kwargs) -> float:
+        """
+        Calcula a amplitude (nota_max - nota_min).
 
-    def calcular_quartis(self, aluno: Aluno, periodo: int) -> dict:
-        """Quartis (Q1, Q2, Q3) e IQR para análise de dispersão e outliers."""
-        notas = sorted([n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo])
-        n = len(notas)
-        if n == 0:
-            return {"q1": 0.0, "q2": 0.0, "q3": 0.0, "iqr": 0.0}
-        if n < 4:
-            med = round(statistics.median(notas), 2)
-            return {"q1": round(notas[0], 2), "q2": med, "q3": round(notas[-1], 2),
-                    "iqr": round(notas[-1] - notas[0], 2)}
-        qs = statistics.quantiles(notas, n=4)
-        q1, q2, q3 = round(qs[0], 2), round(qs[1], 2), round(qs[2], 2)
-        return {"q1": q1, "q2": q2, "q3": q3, "iqr": round(q3 - q1, 2)}
+        Suporta duas assinaturas:
+        1. calcular_amplitude(notas: list[float]) -> float
+        2. calcular_amplitude(aluno: Aluno, periodo: int) -> float (Compatibilidade)
 
-    def calcular_assimetria(self, aluno: Aluno, periodo: int) -> float:
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            float: Amplitude das notas.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            notas = [n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo]
+            if not notas:
+                return 0.0
+            return round(max(notas) - min(notas), 2)
+
+        notas = args[0] if len(args) > 0 else kwargs.get("notas", [])
+        if not notas:
+            return 0.0
+        try:
+            return round(max(notas) - min(notas), 2)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def calcular_quartis(*args, **kwargs) -> dict[str, float]:
+        """
+        Calcula os quartis (Q1, Q3, IQR) usando statistics.quantiles.
+
+        Suporta duas assinaturas:
+        1. calcular_quartis(notas: list[float]) -> dict[str, float]
+        2. calcular_quartis(aluno: Aluno, periodo: int) -> dict[str, float] (Compatibilidade)
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            dict[str, float]: Dicionário contendo q1, q3 e iqr. A versão Aluno também contém q2.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            notas = sorted([n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo])
+            n = len(notas)
+            if n == 0:
+                return {"q1": 0.0, "q2": 0.0, "q3": 0.0, "iqr": 0.0}
+            if n < 4:
+                med = round(statistics.median(notas), 2)
+                return {"q1": round(notas[0], 2), "q2": med, "q3": round(notas[-1], 2),
+                        "iqr": round(notas[-1] - notas[0], 2)}
+            qs = statistics.quantiles(notas, n=4)
+            q1, q2, q3 = round(qs[0], 2), round(qs[1], 2), round(qs[2], 2)
+            return {"q1": q1, "q2": q2, "q3": q3, "iqr": round(q3 - q1, 2)}
+
+        notas = args[0] if len(args) > 0 else kwargs.get("notas", [])
+        if not notas:
+            return {"q1": 0.0, "q3": 0.0, "iqr": 0.0}
+        try:
+            sorted_notas = sorted(notas)
+            n = len(sorted_notas)
+            if n < 4:
+                q1 = sorted_notas[0]
+                q3 = sorted_notas[-1]
+                return {
+                    "q1": round(float(q1), 2),
+                    "q3": round(float(q3), 2),
+                    "iqr": round(float(q3 - q1), 2)
+                }
+            qs = statistics.quantiles(sorted_notas, n=4)
+            q1, q3 = round(qs[0], 2), round(qs[2], 2)
+            return {
+                "q1": q1,
+                "q3": q3,
+                "iqr": round(q3 - q1, 2)
+            }
+        except Exception:
+            return {"q1": 0.0, "q3": 0.0, "iqr": 0.0}
+
+    @staticmethod
+    def calcular_assimetria(aluno: Aluno, periodo: int) -> float:
         """Assimetria amostral (Fisher): > 0 cauda direita, < 0 cauda esquerda."""
         notas = [n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo]
         n = len(notas)
@@ -110,7 +325,8 @@ class IndicadorService:
         soma = sum(((x - media) / desvio) ** 3 for x in notas)
         return round((n / ((n - 1) * (n - 2))) * soma, 3)
 
-    def calcular_curtose(self, aluno: Aluno, periodo: int) -> float:
+    @staticmethod
+    def calcular_curtose(aluno: Aluno, periodo: int) -> float:
         """Curtose em excesso (Fisher): > 0 leptocúrtica, < 0 platicúrtica."""
         notas = [n["nota"] for n in aluno.get_notas() if n["periodo"] == periodo]
         n = len(notas)
@@ -125,60 +341,235 @@ class IndicadorService:
         kurt -= (3 * (n - 1) ** 2) / ((n - 2) * (n - 3))
         return round(kurt, 3)
 
-    def calcular_iaa(self, aluno: Aluno, periodo: int) -> float:
-        """IAA — Índice de Aproveitamento Acadêmico: nota (70%) + frequência normalizada (30%)."""
-        media = self.calcular_media_geral(aluno, periodo)
-        freq = self.calcular_frequencia_media(aluno, periodo)
-        if media == 0:
+    @staticmethod
+    def calcular_zscore(*args, **kwargs) -> float:
+        """
+        Calcula o Z-Score.
+        Fórmula: (media_aluno - media_turma) / desvio_padrao_turma
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            float: O valor do Z-Score arredondado, ou 0.0 se desvio_padrao_turma for 0.0.
+        """
+        if len(args) >= 3:
+            media_aluno = args[0]
+            media_turma = args[1]
+            desvio_padrao_turma = args[2]
+        else:
+            media_aluno = kwargs.get("media_aluno", 0.0)
+            media_turma = kwargs.get("media_turma", 0.0)
+            desvio_padrao_turma = kwargs.get("desvio_padrao_turma", 0.0)
+
+        if desvio_padrao_turma == 0.0:
             return 0.0
-        return round(media * 0.7 + (freq / 10.0) * 0.3, 2)
-
-    def calcular_nota_efetiva(self, aluno: Aluno, periodo: int) -> float:
-        """Nota Efetiva — média penalizada pela frequência real do aluno."""
-        media = self.calcular_media_geral(aluno, periodo)
-        freq = self.calcular_frequencia_media(aluno, periodo)
-        if media == 0:
+        try:
+            return round((media_aluno - media_turma) / desvio_padrao_turma, 4)
+        except Exception:
             return 0.0
-        return round(media * (freq / 100.0), 2)
 
-    def calcular_irp(self, aluno: Aluno, periodo: int) -> float:
-        """IRP — Índice de Risco Ponderado (0–100): quanto maior, mais crítico."""
-        media = self.calcular_media_geral(aluno, periodo)
-        freq  = self.calcular_frequencia_media(aluno, periodo)
-        cv    = self.calcular_coeficiente_variacao(aluno, periodo)
+    # ------------------------------------------------------------------ #
+    # Indicadores Avançados e Exclusivos (Nível 2)
+    # ------------------------------------------------------------------ #
 
-        # Componente nota (peso 40 pts)
-        if media == 0:
-            risco_nota = 20.0
-        elif media < self.NOTA_MINIMA:
-            risco_nota = 40.0
-        elif media < 7.0:
-            risco_nota = 20.0 * (7.0 - media) / 2.0
+    @staticmethod
+    def calcular_iaa(*args, **kwargs) -> float:
+        """
+        Calcula o IAA (Índice de Aproveitamento Acadêmico).
+        Composto com 70% de peso para a média e 30% para a frequência normalizada.
+        Fórmula obrigatória: (media * 0.7) + ((frequencia / 10) * 0.3)
+
+        Suporta duas assinaturas:
+        1. calcular_iaa(media: float, frequencia: float) -> float
+        2. calcular_iaa(aluno: Aluno, periodo: int) -> float (Compatibilidade)
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            float: O IAA calculado e arredondado para 2 casas decimais.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            media = IndicadorService.calcular_media_geral(aluno, periodo)
+            freq = IndicadorService.calcular_frequencia_media(aluno, periodo)
+            if media == 0:
+                return 0.0
+            return round((media * 0.7) + ((freq / 10.0) * 0.3), 2)
+
+        media = args[0] if len(args) > 0 else kwargs.get("media", 0.0)
+        frequencia = args[1] if len(args) > 1 else kwargs.get("frequencia", 0.0)
+        try:
+            return round((media * 0.7) + ((frequencia / 10.0) * 0.3), 2)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def calcular_nota_efetiva(*args, **kwargs) -> float:
+        """
+        Calcula a Nota Efetiva.
+        Penaliza a nota em relação à frequência.
+        Fórmula obrigatória: media * (frequencia / 100)
+
+        Suporta duas assinaturas:
+        1. calcular_nota_efetiva(media: float, frequencia: float) -> float
+        2. calcular_nota_efetiva(aluno: Aluno, periodo: int) -> float (Compatibilidade)
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            float: A Nota Efetiva arredondada para 2 casas decimais.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            media = IndicadorService.calcular_media_geral(aluno, periodo)
+            freq = IndicadorService.calcular_frequencia_media(aluno, periodo)
+            if media == 0:
+                return 0.0
+            return round(media * (freq / 100.0), 2)
+
+        media = args[0] if len(args) > 0 else kwargs.get("media", 0.0)
+        frequencia = args[1] if len(args) > 1 else kwargs.get("frequencia", 0.0)
+        try:
+            return round(media * (frequencia / 100.0), 2)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def calcular_irp(*args, **kwargs) -> float:
+        """
+        Calcula o IRP (Índice de Risco Ponderado).
+        Pontuação de 0 a 100 baseada em limites de penalidade.
+        Peso de 40 para Nota, 40 para Frequência e 20 para Instabilidade (Coeficiente de Variação).
+
+        Explicação da Lógica do IRP:
+        - O IRP compõe uma pontuação de risco ponderando três fatores: nota do aluno (40 pts),
+          assiduidade/frequência (40 pts) e instabilidade das notas representada pelo Coeficiente
+          de Variação (20 pts).
+        - Para Nota: se média < 5.0 (limite mínimo de aprovação), atribui a penalidade máxima (40 pts).
+          Se média >= 7.0, a penalidade é 0. No intervalo [5.0, 7.0[, a penalidade varia linearmente.
+        - Para Frequência: se frequência < 75% (limite mínimo legal), atribui a penalidade máxima (40 pts).
+          Se frequência >= 85%, a penalidade é 0. No intervalo [75%, 85%[, a penalidade varia linearmente.
+        - Para Instabilidade (CV): se CV > 40%, atribui a penalidade máxima (20 pts). Se CV <= 20%, a
+          penalidade é 0. No intervalo ]20%, 40%], varia proporcionalmente.
+        - O retorno é a soma dos três componentes de risco truncado em no máximo 100.0 e arredondado para
+          1 casa decimal.
+
+        Suporta duas assinaturas:
+        1. calcular_irp(media: float, frequencia: float, coeficiente_variacao: float) -> float
+        2. calcular_irp(aluno: Aluno, periodo: int) -> float (Compatibilidade)
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            float: O IRP calculado e arredondado.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            media = IndicadorService.calcular_media_geral(aluno, periodo)
+            freq = IndicadorService.calcular_frequencia_media(aluno, periodo)
+            cv = IndicadorService.calcular_coeficiente_variacao(aluno, periodo)
         else:
-            risco_nota = 0.0
+            media = args[0] if len(args) > 0 else kwargs.get("media", 0.0)
+            freq = args[1] if len(args) > 1 else kwargs.get("frequencia", 0.0)
+            cv = args[2] if len(args) > 2 else kwargs.get("coeficiente_variacao", 0.0)
 
-        # Componente frequência (peso 40 pts)
-        if freq == 0:
-            risco_freq = 20.0
-        elif freq < self.FREQUENCIA_MINIMA:
-            risco_freq = 40.0
-        elif freq < 85.0:
-            risco_freq = 20.0 * (85.0 - freq) / 10.0
-        else:
-            risco_freq = 0.0
+        try:
+            # Componente nota (peso 40 pts)
+            if media == 0:
+                risco_nota = 20.0
+            elif media < 5.0:  # NOTA_MINIMA
+                risco_nota = 40.0
+            elif media < 7.0:
+                risco_nota = 20.0 * (7.0 - media) / 2.0
+            else:
+                risco_nota = 0.0
 
-        # Componente instabilidade / CV (peso 20 pts)
-        if cv > 40:
-            risco_cv = 20.0
-        elif cv > 20:
-            risco_cv = 20.0 * (cv - 20) / 20.0
-        else:
-            risco_cv = 0.0
+            # Componente frequência (peso 40 pts)
+            if freq == 0:
+                risco_freq = 20.0
+            elif freq < 75.0:  # FREQUENCIA_MINIMA
+                risco_freq = 40.0
+            elif freq < 85.0:
+                risco_freq = 20.0 * (85.0 - freq) / 10.0
+            else:
+                risco_freq = 0.0
 
-        return round(min(100.0, risco_nota + risco_freq + risco_cv), 1)
+            # Componente instabilidade / CV (peso 20 pts)
+            if cv > 40.0:
+                risco_cv = 20.0
+            elif cv > 20.0:
+                risco_cv = 20.0 * (cv - 20.0) / 20.0
+            else:
+                risco_cv = 0.0
+
+            return round(min(100.0, risco_nota + risco_freq + risco_cv), 1)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def calcular_tendencia(medias: list[float], periodos: list[float] = None) -> str:
+        """
+        Calcula a tendência entre períodos usando Regressão Linear Simples.
+        Fórmula do slope: (n * sum(xy) - sum(x) * sum(y)) / (n * sum(x^2) - (sum(x))^2)
+
+        Explicação da Lógica da Regressão Linear Simples:
+        - A tendência avalia a evolução cronológica das notas de um aluno.
+        - Usamos a fórmula clássica dos mínimos quadrados para calcular a inclinação (slope) da reta
+          de regressão linear, onde 'medias' representa os valores observados no eixo y e 'periodos'
+          representa a variável temporal no eixo x.
+        - Se a inclinação for marcadamente positiva (slope > 0.3), a tendência é considerada "Crescente".
+        - Se a inclinação for marcadamente negativa (slope < -0.3), a tendência é considerada "Decrescente".
+        - Caso contrário, a evolução é classificada como "Estável".
+
+        Args:
+            medias (list[float]): Lista de médias cronológicas.
+            periodos (list[float], opcional): Lista de períodos. Se omitida, assume-se [1, 2, ..., n].
+
+        Returns:
+            str: "Crescente", "Decrescente" ou "Estável".
+        """
+        n = len(medias)
+        if n < 2:
+            return "Estável"
+        if periodos is None:
+            periodos = list(range(1, n + 1))
+        elif len(periodos) != n:
+            return "Estável"
+
+        try:
+            soma_x = sum(periodos)
+            soma_y = sum(medias)
+            soma_xy = sum(x * y for x, y in zip(periodos, medias))
+            soma_x2 = sum(x ** 2 for x in periodos)
+
+            denom = (n * soma_x2) - (soma_x ** 2)
+            if denom == 0:
+                return "Estável"
+
+            slope = ((n * soma_xy) - (soma_x * soma_y)) / denom
+
+            if slope > 0.3:
+                return "Crescente"
+            elif slope < -0.3:
+                return "Decrescente"
+            else:
+                return "Estável"
+        except Exception:
+            return "Estável"
 
     def calcular_tendencia_periodo(self, aluno: Aluno) -> dict:
-        """Tendência de evolução entre períodos via regressão linear simples."""
+        """Tendência de evolução entre períodos via regressão linear simples (Original)."""
         periodos = sorted(set(n["periodo"] for n in aluno.get_notas()))
         if len(periodos) < 2:
             medias = []
@@ -366,7 +757,7 @@ class IndicadorService:
     # Geração de indicadores persistidos
     # ------------------------------------------------------------------ #
 
-    def gerar_indicadores_aluno(self, aluno: Aluno, periodo: int, salvar: bool = True) -> list:
+    def gerar_indicadores_aluno(self, aluno: Aluno, periodo: int, salvar: bool = True) -> list[Indicador]:
         """Gera e persiste todos os indicadores do aluno no período."""
         indicadores = []
 
@@ -411,44 +802,112 @@ class IndicadorService:
         return indicadores
 
     # ------------------------------------------------------------------ #
-    # Classificação de risco
+    # Classificação de Risco (Passo 3)
     # ------------------------------------------------------------------ #
 
-    def classificar_risco(self, aluno: Aluno, periodo: int) -> Risco:
-        """Classifica o risco acadêmico combinando nota, frequência e instabilidade."""
-        media = self.calcular_media_geral(aluno, periodo)
-        freq = self.calcular_frequencia_media(aluno, periodo)
-        cv = self.calcular_coeficiente_variacao(aluno, periodo)
+    @staticmethod
+    def classificar_risco(*args, **kwargs) -> Union[Risco, tuple[str, list[str]]]:
+        """
+        Classifica o risco acadêmico.
+
+        Suporta duas assinaturas:
+        1. classificar_risco(media: float, frequencia: float, coeficiente_variacao: float) -> tuple[str, list[str]]
+        2. classificar_risco(aluno: Aluno, periodo: int) -> Risco (Compatibilidade)
+
+        Args:
+            *args: Argumentos posicionais.
+            **kwargs: Argumentos nomeados.
+
+        Returns:
+            Risco ou tuple[str, list[str]]: Classificação de risco e evidências.
+        """
+        if args and isinstance(args[0], Aluno):
+            aluno = args[0]
+            periodo = args[1] if len(args) > 1 else 1
+            media = IndicadorService.calcular_media_geral(aluno, periodo)
+            freq = IndicadorService.calcular_frequencia_media(aluno, periodo)
+            cv = IndicadorService.calcular_coeficiente_variacao(aluno, periodo)
+
+            nivel_str, evidencias = IndicadorService.classificar_risco_valores(media, freq, cv)
+
+            nivel_map = {
+                "BAIXO": NivelRisco.BAIXO,
+                "MÉDIO": NivelRisco.MEDIO,
+                "ALTO": NivelRisco.ALTO,
+                "CRÍTICO": NivelRisco.CRITICO
+            }
+            nivel_enum = nivel_map.get(nivel_str, NivelRisco.MEDIO)
+
+            if nivel_str == "MÉDIO" and not evidencias:
+                justificativa = "Sem dados suficientes para análise."
+            elif nivel_str == "BAIXO":
+                justificativa = "Aluno dentro dos parâmetros esperados."
+            elif nivel_str == "MÉDIO":
+                justificativa = "Um indicador abaixo do esperado."
+            else:
+                justificativa = "Múltiplos indicadores críticos detectados."
+
+            return Risco(
+                aluno_id=aluno.id,
+                nivel=nivel_enum,
+                justificativa=justificativa,
+                evidencias=evidencias
+            )
+
+        media = args[0] if len(args) > 0 else kwargs.get("media", 0.0)
+        frequencia = args[1] if len(args) > 1 else kwargs.get("frequencia", 0.0)
+        coeficiente_variacao = args[2] if len(args) > 2 else kwargs.get("coeficiente_variacao", 0.0)
+
+        return IndicadorService.classificar_risco_valores(media, frequencia, coeficiente_variacao)
+
+    @staticmethod
+    def classificar_risco_valores(media: float, frequencia: float, coeficiente_variacao: float) -> tuple[str, list[str]]:
+        """
+        Gera uma lista de strings chamadas 'evidências' sempre que os limiares de atenção forem rompidos.
+        Com base na quantidade e gravidade dessas evidências, retorne uma string de risco e a lista.
+
+        Regras estritas:
+        - Se não houver dados (ambos zero): Retorne "MÉDIO" (sem dados suficientes).
+        - Nenhuma evidência crítica: Retorne "BAIXO".
+        - 1 evidência crítica: Retorne "MÉDIO".
+        - 2 ou mais evidências, com média >= 3.0: Retorne "ALTO".
+        - 2 ou mais evidências, com média < 3.0: Retorne "CRÍTICO".
+
+        Args:
+            media (float): Média das notas.
+            frequencia (float): Percentual de frequência.
+            coeficiente_variacao (float): Coeficiente de variação.
+
+        Returns:
+            tuple[str, list[str]]: O nível de risco ("BAIXO", "MÉDIO", "ALTO", "CRÍTICO") e a lista de evidências.
+        """
         evidencias = []
 
-        if media > 0 and media < self.NOTA_MINIMA:
-            evidencias.append(f"Média {media} abaixo do mínimo ({self.NOTA_MINIMA})")
-        if freq > 0 and freq < self.FREQUENCIA_MINIMA:
-            evidencias.append(f"Frequência {freq}% abaixo do mínimo ({self.FREQUENCIA_MINIMA}%)")
-        if cv > 40:
-            evidencias.append(f"Alta instabilidade nas notas (CV={cv}%)")
+        if media == 0.0 and frequencia == 0.0:
+            return "MÉDIO", []
 
-        if media == 0.0 and freq == 0.0:
-            nivel = NivelRisco.MEDIO
-            justificativa = "Sem dados suficientes para análise."
-        elif len(evidencias) == 0:
-            nivel = NivelRisco.BAIXO
-            justificativa = "Aluno dentro dos parâmetros esperados."
-        elif len(evidencias) == 1:
-            nivel = NivelRisco.MEDIO
-            justificativa = "Um indicador abaixo do esperado."
+        if media < 5.0:
+            evidencias.append(f"Média {media} abaixo do mínimo (5.0)")
+
+        if frequencia < 75.0:
+            evidencias.append(f"Frequência {frequencia}% abaixo do mínimo (75.0%)")
+
+        if coeficiente_variacao > 40.0:
+            evidencias.append(f"Alta instabilidade nas notas (CV={coeficiente_variacao}%)")
+
+        n_evidencias = len(evidencias)
+
+        if n_evidencias == 0:
+            return "BAIXO", evidencias
+        elif n_evidencias == 1:
+            return "MÉDIO", evidencias
         else:
-            nivel = NivelRisco.ALTO if media >= 3.0 else NivelRisco.CRITICO
-            justificativa = "Múltiplos indicadores críticos detectados."
+            if media >= 3.0:
+                return "ALTO", evidencias
+            else:
+                return "CRÍTICO", evidencias
 
-        return Risco(
-            aluno_id=aluno.id,
-            nivel=nivel,
-            justificativa=justificativa,
-            evidencias=evidencias,
-        )
-
-    def listar_indicadores_aluno(self, aluno_id: str) -> list:
+    def listar_indicadores_aluno(self, aluno_id: str) -> list[Indicador]:
         """Retorna todos os indicadores persistidos de um aluno."""
         dados = self._repo.filtrar("aluno_id", aluno_id)
         return [Indicador.from_dict(d) for d in dados]
